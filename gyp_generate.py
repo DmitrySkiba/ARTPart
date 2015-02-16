@@ -62,6 +62,7 @@ def main(arguments):
   parser.add_option('--ninja', action = 'store_true')
   parser.add_option('--update', action = 'store_true')
   parser.add_option('--android-sdk-root')
+  parser.add_option('--no-gradle', dest = 'using_gradle', default = True, action = 'store_false')
 
   options, _ = parser.parse_args(arguments)
 
@@ -113,6 +114,7 @@ def main(arguments):
       '-f', generator,
       '-D', 'root_path=' + root_path,
       '-D', 'variant=' + variant,
+      '-D', 'using_gradle=' + str(int(options.using_gradle)),
     ]
 
     if os_variant:

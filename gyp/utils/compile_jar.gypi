@@ -38,6 +38,7 @@
     'compile_jar.stamp_file%': '',
     'compile_jar.extra_action_inputs%': [],
 
+    # TODO: use force_action target instead
     'compile_jar._force_file': '<(compile_jar.intermediate_path)/compile_jar.force',
   },
 

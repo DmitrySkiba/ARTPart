@@ -1,0 +1,54 @@
+/*
+ * Copyright (C) 2015 Dmitry Skiba
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.nio.file.Paths
+
+def hasSettings = hasProperty('settings')
+def hasProject = hasProperty('project')
+assert hasSettings ^ hasProject
+
+ext {
+    // We need those variables in two places: build.gradle (and its subprojects)
+    // and settings.gradle. Instead of inventing third file and applying it, I
+    // came up with this hack which allows including settings.gradle directly.
+
+    rootPath = hasSettings ? settingsDir : projectDir
+
+    platformRoot = new File(rootPath, 'platform')
+    gradleRoot = new File(rootPath, 'gradle')
+    outRoot = new File(rootPath, "out/host")
+
+    relativize = { File path, File other ->
+        return Paths.get(path.toURI()).relativize(Paths.get(other.toURI())).toFile()
+    }
+}
+
+if (hasSettings) {
+    def includeSubproject = { String name, String platformSubpath ->
+        def projectName = ":$name"
+        def buildFilePath = new File(gradleRoot, "${name}.gradle")
+
+        include(projectName)
+        def project = project(projectName)
+        project.projectDir = new File(platformRoot, platformSubpath)
+
+        // Make sure 'project.buildFile' ends up being 'buildFilePath'
+        project.buildFileName = relativize(project.projectDir, buildFilePath).path
+    }
+
+    includeSubproject 'rt', 'libcore'
+    includeSubproject 'conscrypt', 'libcore/crypto'
+}

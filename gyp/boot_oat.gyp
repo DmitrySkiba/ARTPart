@@ -18,59 +18,101 @@
     'java-common.gypi',
   ],
 
-  'variables': {
-    'jar_dependencies': [
-      '<!(<(dependency) libcore-rt_jar)',
-      '<!(<(dependency) libcore-conscrypt_jar)',
-    ],
-  },
-
-  'targets': [
-    {
-      'target_name': 'boot_jars<(any_variant)',
-      'type': 'none',
-
-      'dependencies': [ '<@(jar_dependencies)' ],
-      'export_dependent_settings': [ '<@(jar_dependencies)' ],
-    },
-    {
-      'target_name': 'boot_oat<(any_variant)',
-      'type': 'none',
-
-      'dependencies': [
-        'boot_jars<(any_variant)',
-        '<!(<(dependency) art-dex2oat)',
-      ],
-
-      'actions': [
+  'conditions': [
+    [ 'using_gradle == 1', {
+      'targets': [
         {
-          'action_name': 'boot_oat',
-          'message': 'Building boot.* files...',
+          'target_name': 'boot_oat<(any_variant)',
+          'type': 'none',
 
-          'inputs': [
-            '>@(dependencies.dex_files)',
-          ],
-          'outputs': [
-            '<(boot_art_path)',
-            '<(boot_oat_path)',
+          'dependencies': [
+            '<!(<(dependency) force_action)',
+            '<!(<(dependency) art-dex2oat)',
           ],
 
-          'action': [
-            #TODO introduce dex2oat.py wrapper with --dex-files option and use >@(dependencies.dex_files)
-            'python', 'utils/cwd_launcher.py', '<(android_fs_root)',
-            '<!(<(relpath) <(android_fs_root) <(dex2oat_path))',
-            '--android-root=<!(<(relpath) <(android_fs_root) <(android_root_path))',
-            '--runtime-arg', '-Xms64m',
-            '--runtime-arg', '-Xmx64m',
-            '--dex-file=<!(<(relpath) <(android_fs_root) <!(<(dex_path_v) rt))',
-            '--dex-file=<!(<(relpath) <(android_fs_root) <!(<(dex_path_v) conscrypt))',
-            '--base=<(boot_oat_base)',
-            '--image-classes=<(platform_root)/frameworks/base/preloaded-classes',
-            '--image=<!(<(relpath) <(android_fs_root) <(boot_art_path))',
-            '--oat-file=<!(<(relpath) <(android_fs_root) <(boot_oat_path))',
-          ],
+          'actions': [
+            {
+              'action_name': 'boot_oat',
+              'message': 'Building boot.* files...',
+
+              'inputs': [
+                '<(force_action_input)',
+              ],
+              'outputs': [
+                '<(boot_art_path)',
+                '<(boot_oat_path)',
+              ],
+
+              'action': [
+                'python', 'utils/cwd_launcher.py', '<(root_path)',
+                'gradlew', 'bootOat'
+              ],
+            },
+          ]
+        }
+      ]
+    }, {
+      'targets': [
+        {
+          'target_name': 'boot_jars<(any_variant)',
+          'type': 'none',
+
+          'variables': {
+            'jar_dependencies': [
+              '<!(<(dependency) libcore-rt_jar)',
+              '<!(<(dependency) libcore-conscrypt_jar)',
+            ],
+          },
+
+          'dependencies': [ '<@(jar_dependencies)' ],
+          'export_dependent_settings': [ '<@(jar_dependencies)' ],
         },
-      ],
-    }
+        {
+          'target_name': 'boot_oat<(any_variant)',
+          'type': 'none',
+
+          'dependencies': [
+            'boot_jars<(any_variant)',
+            '<!(<(dependency) art-dex2oat)',
+          ],
+
+          'conditions': [
+            [ 'using_gradle == 1', {
+
+            },],
+          ],
+
+          'actions': [
+            {
+              'action_name': 'boot_oat',
+              'message': 'Building boot.* files...',
+
+              'inputs': [
+                '>@(dependencies.dex_files)',
+              ],
+              'outputs': [
+                '<(boot_art_path)',
+                '<(boot_oat_path)',
+              ],
+
+              'action': [
+                #TODO introduce dex2oat.py wrapper with --dex-files option and use >@(dependencies.dex_files)
+                'python', 'utils/cwd_launcher.py', '<(android_fs_root)',
+                '<!(<(relpath) <(android_fs_root) <(dex2oat_path))',
+                '--android-root=<!(<(relpath) <(android_fs_root) <(android_root_path))',
+                '--runtime-arg', '-Xms64m',
+                '--runtime-arg', '-Xmx64m',
+                '--dex-file=<!(<(relpath) <(android_fs_root) <!(<(dex_path_v) rt))',
+                '--dex-file=<!(<(relpath) <(android_fs_root) <!(<(dex_path_v) conscrypt))',
+                '--base=<(boot_oat_base)',
+                '--image-classes=<(platform_root)/frameworks/base/preloaded-classes',
+                '--image=<!(<(relpath) <(android_fs_root) <(boot_art_path))',
+                '--oat-file=<!(<(relpath) <(android_fs_root) <(boot_oat_path))',
+              ],
+            },
+          ],
+        }
+      ]
+    }]
   ]
 }

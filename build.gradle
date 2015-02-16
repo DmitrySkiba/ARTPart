@@ -1,0 +1,138 @@
+/*
+ * Copyright (C) 2015 Dmitry Skiba
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.commons.io.FilenameUtils
+import groovy.json.JsonSlurper
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'commons-io:commons-io:2.4'
+    }
+}
+
+// Settings
+
+apply from: 'settings.gradle'
+
+ext {
+    architecture = 'x86'
+
+    outRoot = new File(rootPath, "out/host")
+    buildRoot = new File(outRoot, 'build/gradle')
+
+    productRoot = new File(outRoot, 'product')
+    binRoot = productRoot
+    androidFSRoot = new File(productRoot, 'android_fs')
+
+    androidRootPath = new File(androidFSRoot, 'system')
+    androidFrameworkPath = new File(androidRootPath, 'framework')
+    androidDataPath = new File(androidFSRoot, 'data')
+
+    bootArtFile = new File(androidDataPath, "dalvik-cache/$architecture/boot.art")
+    bootOatFile = new File(androidDataPath, "dalvik-cache/$architecture/boot.oat")
+    dex2oatFile = new File(binRoot, 'dex2oat')
+
+    jarjarToolPath = new File(platformRoot, 'prebuilts/misc/common/jarjar/jarjar-1.4.jar')
+
+    bootOatBase = "0x60000000"
+
+    // Import build environment variables
+    def buildEnvironPath = new File(outRoot, 'build_environ.json')
+    if (!buildEnvironPath.exists()) {
+        throw new GradleException("Please run gyp_generate.py to generate $buildEnvironPath")
+    }
+    new JsonSlurper().parse(buildEnvironPath).each { key, value -> set(key, value) }
+}
+
+// Utilities
+
+def dexPathFromJar(File jarFile) {
+    return new File(androidFrameworkPath, jarFile.getName())
+}
+
+class Dex extends DefaultTask {
+    Boolean coreLibrary = false
+
+    @InputFile
+    File jarFile
+
+    @OutputFile
+    File dexFile
+
+    @TaskAction
+    def dex() {
+        project.exec {
+            executable = project.BUILD_ANDROID_DX
+
+            args '--dex'
+            if (coreLibrary) {
+                args '--core-library'
+            }
+            args "--output=$dexFile", jarFile
+        }
+    }
+}
+ext.Dex = Dex
+
+// Tasks
+
+configurations {
+    allDexedJars
+}
+
+project.subprojects { subproject ->
+    buildDir = new File(buildRoot, name)
+
+    plugins.withType(JavaPlugin) {
+        rootProject.dependencies {
+            allDexedJars project(path: subproject.path, configuration: 'dexedJar')
+        }
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.2.1'
+}
+
+task bootOat {
+    inputs.file configurations.allDexedJars
+    outputs.file bootArtFile
+    outputs.file bootOatFile
+
+    doLast {
+        project.exec {
+            workingDir = androidFSRoot
+            executable = relativize(androidFSRoot, dex2oatFile)
+            args "--android-root=${relativize(androidFSRoot, androidRootPath)}"
+            args '--runtime-arg', '-Xms64m'
+            args '--runtime-arg', '-Xmx64m'
+            inputs.files.each { dexedJar ->
+                args "--dex-file=${relativize(androidFSRoot, dexedJar)}"
+            }
+            args "--base=$bootOatBase"
+            args "--image-classes=$platformRoot/frameworks/base/preloaded-classes"
+            args "--image=${relativize(androidFSRoot, bootArtFile)}"
+            args "--oat-file=${relativize(androidFSRoot, bootOatFile)}"
+        }
+    }
+}
+
+task clean(type: Delete) {
+    delete bootOat.outputs
+}
