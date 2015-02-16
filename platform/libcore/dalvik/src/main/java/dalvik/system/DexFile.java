@@ -25,7 +25,6 @@ import java.util.List;
 import libcore.io.ErrnoException;
 import libcore.io.Libcore;
 import libcore.io.StructStat;
-
 /**
  * Manipulates DEX files. The class is similar in principle to
  * {@link java.util.zip.ZipFile}. It is used primarily by class loaders.
@@ -34,7 +33,7 @@ import libcore.io.StructStat;
  * read-only by the VM.
  */
 public final class DexFile {
-    private int mCookie;
+    private long mCookie;
     private final String mFileName;
     private final CloseGuard guard = CloseGuard.get();
 
@@ -80,7 +79,7 @@ public final class DexFile {
         mCookie = openDexFile(fileName, null, 0);
         mFileName = fileName;
         guard.open("close");
-        //System.out.println("DEX FILE cookie is " + mCookie);
+        //System.out.println("DEX FILE cookie is " + mCookie + " fileName=" + fileName);
     }
 
     /**
@@ -111,7 +110,7 @@ public final class DexFile {
         mCookie = openDexFile(sourceName, outputName, flags);
         mFileName = sourceName;
         guard.open("close");
-        //System.out.println("DEX FILE cookie is " + mCookie);
+        //System.out.println("DEX FILE cookie is " + mCookie + " sourceName=" + sourceName + " outputName=" + outputName);
     }
 
     /**
@@ -158,6 +157,10 @@ public final class DexFile {
      */
     public String getName() {
         return mFileName;
+    }
+
+    @Override public String toString() {
+        return getName();
     }
 
     /**
@@ -215,7 +218,7 @@ public final class DexFile {
         return defineClass(name, loader, mCookie, suppressed);
     }
 
-    private static Class defineClass(String name, ClassLoader loader, int cookie,
+    private static Class defineClass(String name, ClassLoader loader, long cookie,
                                      List<Throwable> suppressed) {
         Class result = null;
         try {
@@ -231,9 +234,6 @@ public final class DexFile {
         }
         return result;
     }
-
-    private static native Class defineClassNative(String name, ClassLoader loader, int cookie)
-        throws ClassNotFoundException, NoClassDefFoundError;
 
     /**
      * Enumerate the names of the classes in this DEX file.
@@ -266,9 +266,6 @@ public final class DexFile {
         }
     }
 
-    /* return a String array with class names */
-    native private static String[] getClassNameList(int cookie);
-
     /**
      * Called when the class is finalized. Makes sure the DEX file is closed.
      *
@@ -287,24 +284,27 @@ public final class DexFile {
         }
     }
 
+
     /*
      * Open a DEX file.  The value returned is a magic VM cookie.  On
      * failure, an IOException is thrown.
      */
-    private static int openDexFile(String sourceName, String outputName,
-        int flags) throws IOException {
-        return openDexFileNative(new File(sourceName).getCanonicalPath(),
-                                 (outputName == null) ? null : new File(outputName).getCanonicalPath(),
+    private static long openDexFile(String sourceName, String outputName, int flags) throws IOException {
+        // Use absolute paths to enable the use of relative paths when testing on host.
+        return openDexFileNative(new File(sourceName).getAbsolutePath(),
+                                 (outputName == null) ? null : new File(outputName).getAbsolutePath(),
                                  flags);
     }
 
-    native private static int openDexFileNative(String sourceName, String outputName,
-        int flags) throws IOException;
-
+    private static native void closeDexFile(long cookie);
+    private static native Class defineClassNative(String name, ClassLoader loader, long cookie)
+            throws ClassNotFoundException, NoClassDefFoundError;
+    private static native String[] getClassNameList(long cookie);
     /*
-     * Close DEX file.
+     * Open a DEX file.  The value returned is a magic VM cookie.  On
+     * failure, an IOException is thrown.
      */
-    native private static void closeDexFile(int cookie);
+    private static native long openDexFileNative(String sourceName, String outputName, int flags);
 
     /**
      * Returns true if the VM believes that the apk/jar file is out of date
@@ -320,6 +320,52 @@ public final class DexFile {
      * @throws dalvik.system.StaleDexCacheError if the optimized dex file
      *         is stale but exists on a read-only partition.
      */
-    native public static boolean isDexOptNeeded(String fileName)
+    public static native boolean isDexOptNeeded(String fileName)
+            throws FileNotFoundException, IOException;
+
+    /**
+     * See {@link #isDexOptNeededInternal(String, String, String, boolean)}.
+     *
+     * @hide
+     */
+    public static final byte UP_TO_DATE = 0;
+
+    /**
+     * See {@link #isDexOptNeededInternal(String, String, String, boolean)}.
+     *
+     * @hide
+     */
+    public static final byte PATCHOAT_NEEDED = 1;
+
+    /**
+     * See {@link #isDexOptNeededInternal(String, String, String, boolean)}.
+     *
+     * @hide
+     */
+    public static final byte DEXOPT_NEEDED = 2;
+
+    /**
+     * Returns UP_TO_DATE if the VM believes that the apk/jar file
+     * is up to date, PATCHOAT_NEEDED if it believes that the file is up
+     * to date but it must be relocated to match the base address offset,
+     * and DEXOPT_NEEDED if it believes that it is out of date and should
+     * be passed through "dexopt" again.
+     *
+     * @param fileName the absolute path to the apk/jar file to examine.
+     * @return DEXOPT_NEEDED if dexopt should be called on the file,
+     *         PATCHOAT_NEEDED if we need to run "patchoat" on it and
+     *         UP_TO_DATE otherwise.
+     * @throws java.io.FileNotFoundException if fileName is not readable,
+     *         not a file, or not present.
+     * @throws java.io.IOException if fileName is not a valid apk/jar file or
+     *         if problems occur while parsing it.
+     * @throws java.lang.NullPointerException if fileName is null.
+     * @throws dalvik.system.StaleDexCacheError if the optimized dex file
+     *         is stale but exists on a read-only partition.
+     *
+     * @hide
+     */
+    public static native byte isDexOptNeededInternal(String fileName, String pkgname,
+            String instructionSet, boolean defer)
             throws FileNotFoundException, IOException;
 }

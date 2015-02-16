@@ -21,7 +21,19 @@
 #include "JniException.h"
 #include "ScopedPrimitiveArray.h"
 #include "ZipUtilities.h"
+
+#if !defined(__APPLE__)
 #include "zutil.h" // For DEF_WBITS and DEF_MEM_LEVEL.
+#else
+#ifndef DEF_WBITS
+#  define DEF_WBITS MAX_WBITS
+#endif
+#if MAX_MEM_LEVEL >= 8
+#  define DEF_MEM_LEVEL 8
+#else
+#  define DEF_MEM_LEVEL MAX_MEM_LEVEL
+#endif
+#endif
 
 static void Deflater_setDictionaryImpl(JNIEnv* env, jobject, jbyteArray dict, int off, int len, jlong handle) {
     toNativeZipStream(handle)->setDictionary(env, dict, off, len, false);

@@ -16,6 +16,9 @@
 
 package dalvik.system;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Provides an interface to VM-global, Dalvik-specific features.
  * An application cannot create its own Runtime instance, and must obtain
@@ -29,6 +32,20 @@ public final class VMRuntime {
      * Holds the VMRuntime singleton.
      */
     private static final VMRuntime THE_ONE = new VMRuntime();
+
+    private static final Map<String, String> ABI_TO_INSTRUCTION_SET_MAP
+            = new HashMap<String, String>();
+    static {
+        ABI_TO_INSTRUCTION_SET_MAP.put("armeabi", "arm");
+        ABI_TO_INSTRUCTION_SET_MAP.put("armeabi-v7a", "arm");
+        ABI_TO_INSTRUCTION_SET_MAP.put("mips", "mips");
+        ABI_TO_INSTRUCTION_SET_MAP.put("mips64", "mips64");
+        ABI_TO_INSTRUCTION_SET_MAP.put("x86", "x86");
+        ABI_TO_INSTRUCTION_SET_MAP.put("x86_64", "x86_64");
+        ABI_TO_INSTRUCTION_SET_MAP.put("arm64-v8a", "arm64");
+    }
+
+    private int targetSdkVersion;
 
     /**
      * Prevents this class from being instantiated.
@@ -71,6 +88,21 @@ public final class VMRuntime {
      * Returns the name of the shared library providing the VM implementation.
      */
     public native String vmLibrary();
+
+    /**
+     * Returns the VM's instruction set.
+     */
+    public native String vmInstructionSet();
+
+    /**
+     * Returns whether the VM is running in 64-bit mode.
+     */
+    public native boolean is64Bit();
+
+    /**
+     * Returns whether the VM is running with JNI checking enabled.
+     */
+    public native boolean isCheckJniEnabled();
 
     /**
      * Gets the current ideal heap utilization, represented as a number
@@ -116,9 +148,23 @@ public final class VMRuntime {
      * app starts to run, because it may change the VM's behavior in
      * dangerous ways. Use 0 to mean "current" (since callers won't
      * necessarily know the actual current SDK version, and the
-     * allocated version numbers start at 1).
+     * allocated version numbers start at 1), and 10000 to mean
+     * CUR_DEVELOPMENT.
      */
-    public native void setTargetSdkVersion(int targetSdkVersion);
+    public synchronized void setTargetSdkVersion(int targetSdkVersion) {
+        this.targetSdkVersion = targetSdkVersion;
+        setTargetSdkVersionNative(this.targetSdkVersion);
+    }
+
+    /**
+     * Gets the target SDK version. See {@link #setTargetSdkVersion} for
+     * special values.
+     */
+    public synchronized int getTargetSdkVersion() {
+        return targetSdkVersion;
+    }
+
+    private native void setTargetSdkVersionNative(int targetSdkVersion);
 
     /**
      * This method exists for binary compatibility.  It was part of a
@@ -207,6 +253,13 @@ public final class VMRuntime {
     public native Object newNonMovableArray(Class<?> componentType, int length);
 
     /**
+     * Returns an array of at least minLength, but potentially larger. The increased size comes from
+     * avoiding any padding after the array. The amount of padding varies depending on the
+     * componentType and the memory allocator implementation.
+     */
+    public native Object newUnpaddedArray(Class<?> componentType, int minLength);
+
+    /**
      * Returns the address of array[0]. This differs from using JNI in that JNI might lie and
      * give you the address of a copy of the array when in forcecopy mode.
      */
@@ -241,7 +294,59 @@ public final class VMRuntime {
     public native void trimHeap();
     public native void concurrentGC();
 
-    public void preloadDexCaches() {
-        // Do nothing with ART, image generation already does this.
+    /**
+     * Let the heap know of the new process state. This can change allocation and garbage collection
+     * behavior regarding trimming and compaction.
+     */
+    public native void updateProcessState(int state);
+
+    /**
+     * Fill in dex caches with classes, fields, and methods that are
+     * already loaded. Typically used after Zygote preloading.
+     */
+    public native void preloadDexCaches();
+
+    /**
+     * Register application info
+     */
+    public static native void registerAppInfo(String appDir, String processName, String pkgname);
+
+    /**
+     * Returns the runtime instruction set corresponding to a given ABI. Multiple
+     * compatible ABIs might map to the same instruction set. For example
+     * {@code armeabi-v7a} and {@code armeabi} might map to the instruction set {@code arm}.
+     *
+     * This influences the compilation of the applications classes.
+     */
+    public static String getInstructionSet(String abi) {
+        final String instructionSet = ABI_TO_INSTRUCTION_SET_MAP.get(abi);
+        if (instructionSet == null) {
+            throw new IllegalArgumentException("Unsupported ABI: " + abi);
+        }
+
+        return instructionSet;
     }
+
+    public static boolean is64BitInstructionSet(String instructionSet) {
+        return "arm64".equals(instructionSet) ||
+                "x86_64".equals(instructionSet) ||
+                "mips64".equals(instructionSet);
+    }
+
+    public static boolean is64BitAbi(String abi) {
+        return is64BitInstructionSet(getInstructionSet(abi));
+    }
+
+    /**
+     * Return false if the boot class path for the given instruction
+     * set mapped from disk storage, versus being interpretted from
+     * dirty pages in memory.
+     */
+    public static native boolean isBootClassPathOnDisk(String instructionSet);
+
+    /**
+     * Returns the instruction set of the current runtime.
+     */
+    public static native String getCurrentInstructionSet();
+
 }

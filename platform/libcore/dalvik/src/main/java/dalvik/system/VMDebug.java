@@ -156,9 +156,16 @@ public final class VMDebug {
      * as <code>0</code>, it defaults to 8MB.
      * @param flags flags to control method tracing. The only one that
      * is currently defined is {@link #TRACE_COUNT_ALLOCS}.
+     * @param samplingEnabled if true, sample profiling is enabled. Otherwise,
+     * method instrumentation is used.
+     * @param intervalUs the time between samples in microseconds when
+     * sampling is enabled.
      */
+    public static void startMethodTracing(String traceFileName, int bufferSize, int flags, boolean samplingEnabled, int intervalUs) {
+        startMethodTracingFilename(traceFileName, checkBufferSize(bufferSize), flags, samplingEnabled, intervalUs);
+    }
     public static void startMethodTracing(String traceFileName, int bufferSize, int flags) {
-        startMethodTracingFilename(traceFileName, checkBufferSize(bufferSize), flags);
+        startMethodTracing(traceFileName, bufferSize, flags, false, 0);
     }
 
     /**
@@ -166,11 +173,14 @@ public final class VMDebug {
      * FileDescriptor in which the trace is written.  The file name is also
      * supplied simply for logging.  Makes a dup of the file descriptor.
      */
-    public static void startMethodTracing(String traceFileName, FileDescriptor fd, int bufferSize, int flags) {
+    public static void startMethodTracing(String traceFileName, FileDescriptor fd, int bufferSize, int flags, boolean samplingEnabled, int intervalUs) {
         if (fd == null) {
             throw new NullPointerException("fd == null");
         }
-        startMethodTracingFd(traceFileName, fd, checkBufferSize(bufferSize), flags);
+        startMethodTracingFd(traceFileName, fd, checkBufferSize(bufferSize), flags, samplingEnabled, intervalUs);
+    }
+    public static void startMethodTracing(String traceFileName, FileDescriptor fd, int bufferSize, int flags) {
+        startMethodTracing(traceFileName, fd, bufferSize, flags, false, 0);
     }
 
     /**
@@ -194,8 +204,8 @@ public final class VMDebug {
     }
 
     private static native void startMethodTracingDdmsImpl(int bufferSize, int flags, boolean samplingEnabled, int intervalUs);
-    private static native void startMethodTracingFd(String traceFileName, FileDescriptor fd, int bufferSize, int flags);
-    private static native void startMethodTracingFilename(String traceFileName, int bufferSize, int flags);
+    private static native void startMethodTracingFd(String traceFileName, FileDescriptor fd, int bufferSize, int flags, boolean samplingEnabled, int intervalUs);
+    private static native void startMethodTracingFilename(String traceFileName, int bufferSize, int flags, boolean samplingEnabled, int intervalUs);
 
     /**
      * Determine whether method tracing is currently active and what type is

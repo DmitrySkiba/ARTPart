@@ -27,13 +27,16 @@
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <sys/capability.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+#if !defined(__APPLE__)
+#include <sys/capability.h>
+#endif
 
 #include <net/if.h> // After <sys/socket.h> to work around a Mac header file bug.
 
@@ -56,6 +59,7 @@ static void OsConstants_initConstants(JNIEnv* env, jclass c) {
 #endif
     initConstant(env, c, "AI_PASSIVE", AI_PASSIVE);
     initConstant(env, c, "AI_V4MAPPED", AI_V4MAPPED);
+#if !defined(__APPLE__)
     initConstant(env, c, "CAP_AUDIT_CONTROL", CAP_AUDIT_CONTROL);
     initConstant(env, c, "CAP_AUDIT_WRITE", CAP_AUDIT_WRITE);
     initConstant(env, c, "CAP_CHOWN", CAP_CHOWN);
@@ -93,6 +97,7 @@ static void OsConstants_initConstants(JNIEnv* env, jclass c) {
     initConstant(env, c, "CAP_SYS_TIME", CAP_SYS_TIME);
     initConstant(env, c, "CAP_SYS_TTY_CONFIG", CAP_SYS_TTY_CONFIG);
     initConstant(env, c, "CAP_WAKE_ALARM", CAP_WAKE_ALARM);
+#endif // !__APPLE__
     initConstant(env, c, "E2BIG", E2BIG);
     initConstant(env, c, "EACCES", EACCES);
     initConstant(env, c, "EADDRINUSE", EADDRINUSE);
@@ -398,8 +403,10 @@ static void OsConstants_initConstants(JNIEnv* env, jclass c) {
     initConstant(env, c, "SO_KEEPALIVE", SO_KEEPALIVE);
     initConstant(env, c, "SO_LINGER", SO_LINGER);
     initConstant(env, c, "SO_OOBINLINE", SO_OOBINLINE);
+#if !defined(__APPLE__)
     initConstant(env, c, "SO_PASSCRED", SO_PASSCRED);
     initConstant(env, c, "SO_PEERCRED", SO_PEERCRED);
+#endif
     initConstant(env, c, "SO_RCVBUF", SO_RCVBUF);
     initConstant(env, c, "SO_RCVLOWAT", SO_RCVLOWAT);
     initConstant(env, c, "SO_RCVTIMEO", SO_RCVTIMEO);

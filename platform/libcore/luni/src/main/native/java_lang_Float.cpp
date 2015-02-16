@@ -18,6 +18,7 @@
 
 #include "JNIHelp.h"
 #include "JniConstants.h"
+#include "Portability.h"
 
 #include <math.h>
 #include <stdlib.h>

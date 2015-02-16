@@ -133,13 +133,19 @@ public class Object {
     private transient Class<?> shadow$_klass_;
     private transient int shadow$_monitor_;
 
+    // Uncomment the following two fields to enable brooks pointers.
+    // Meant to do "#ifdef USE_BROOKS_POINTER ... #endif" but no macros.
+    //
+    // Note names use a 'x' prefix and the _x_rb_ptr_ field is of
+    // type int instead of Object to go with the alphabetical/by-type
+    // field order.
+    // private transient int shadow$_x_rb_ptr_;
+    // private transient int shadow$_x_xpadding_;
+
     /**
      * Constructs a new instance of {@code Object}.
      */
     public Object() {
-      if (shadow$_klass_.isFinalizable()) {
-        java.lang.ref.FinalizerReference.add(this);
-      }
     }
 
     /**
@@ -267,6 +273,12 @@ public class Object {
      * @see #equals
      */
     public int hashCode() {
+        int lockWord = shadow$_monitor_;
+        final int lockWordMask = 0xC0000000;  // Top 2 bits.
+        final int lockWordStateHash = 0x80000000;  // Top 2 bits are value 2 (kStateHash).
+        if ((lockWord & lockWordMask) == lockWordStateHash) {
+            return lockWord & ~lockWordMask;
+        }
         return System.identityHashCode(this);
     }
 
@@ -278,10 +290,9 @@ public class Object {
      * that called {@code notify()} has to release the object's monitor first.
      * Also, the chosen thread still has to compete against other threads that
      * try to synchronize on the same object.
-     * <p>
-     * This method can only be invoked by a thread which owns this object's
+     *
+     * <p>This method can only be invoked by a thread which owns this object's
      * monitor. A thread becomes owner of an object's monitor
-     * </p>
      * <ul>
      * <li>by executing a synchronized method of that object;</li>
      * <li>by executing the body of a {@code synchronized} statement that
@@ -304,10 +315,9 @@ public class Object {
      * will not run immediately. The thread that called {@code notify()} has to
      * release the object's monitor first. Also, the threads still have to
      * compete against other threads that try to synchronize on the same object.
-     * <p>
-     * This method can only be invoked by a thread which owns this object's
+     *
+     * <p>This method can only be invoked by a thread which owns this object's
      * monitor. A thread becomes owner of an object's monitor
-     * </p>
      * <ul>
      * <li>by executing a synchronized method of that object;</li>
      * <li>by executing the body of a {@code synchronized} statement that
@@ -349,23 +359,22 @@ public class Object {
      * notify()} or {@code notifyAll()} method of this object. This method can
      * only be invoked by a thread which owns this object's monitor; see
      * {@link #notify()} on how a thread can become the owner of a monitor.
-     * <p>
-     * A waiting thread can be sent {@code interrupt()} to cause it to
+     *
+     * <p>A waiting thread can be sent {@code interrupt()} to cause it to
      * prematurely stop waiting, so {@code wait} should be called in a loop to
      * check that the condition that has been waited for has been met before
      * continuing.
-     * </p>
-     * <p>
-     * While the thread waits, it gives up ownership of this object's monitor.
-     * When it is notified (or interrupted), it re-acquires the monitor before
-     * it starts running.
-     * </p>
+     *
+     * <p>While the thread waits, it gives up ownership of this object's
+     * monitor. When it is notified (or interrupted), it re-acquires the monitor
+     * before it starts running.
      *
      * @throws IllegalMonitorStateException
      *             if the thread calling this method is not the owner of this
      *             object's monitor.
-     * @throws InterruptedException
-     *             if another thread interrupts this thread while it is waiting.
+     * @throws InterruptedException if the current thread has been interrupted.
+     *             The interrupted status of the current thread will be cleared before the exception
+     *             is thrown.
      * @see #notify
      * @see #notifyAll
      * @see #wait(long)
@@ -380,17 +389,18 @@ public class Object {
      * specified timeout expires. This method can only be invoked by a thread
      * which owns this object's monitor; see {@link #notify()} on how a thread
      * can become the owner of a monitor.
-     * <p>
-     * A waiting thread can be sent {@code interrupt()} to cause it to
+     *
+     * <p>A waiting thread can be sent {@code interrupt()} to cause it to
      * prematurely stop waiting, so {@code wait} should be called in a loop to
      * check that the condition that has been waited for has been met before
      * continuing.
-     * </p>
-     * <p>
-     * While the thread waits, it gives up ownership of this object's monitor.
-     * When it is notified (or interrupted), it re-acquires the monitor before
-     * it starts running.
-     * </p>
+     *
+     * <p>While the thread waits, it gives up ownership of this object's
+     * monitor. When it is notified (or interrupted), it re-acquires the monitor
+     * before it starts running.
+     *
+     * <p>A timeout of zero means the calling thread should wait forever unless interrupted or
+     * notified.
      *
      * @param millis
      *            the maximum time to wait in milliseconds.
@@ -399,8 +409,9 @@ public class Object {
      * @throws IllegalMonitorStateException
      *             if the thread calling this method is not the owner of this
      *             object's monitor.
-     * @throws InterruptedException
-     *             if another thread interrupts this thread while it is waiting.
+     * @throws InterruptedException if the current thread has been interrupted.
+     *             The interrupted status of the current thread will be cleared before the exception
+     *             is thrown.
      * @see #notify
      * @see #notifyAll
      * @see #wait()
@@ -417,17 +428,18 @@ public class Object {
      * specified timeout expires. This method can only be invoked by a thread
      * that owns this object's monitor; see {@link #notify()} on how a thread
      * can become the owner of a monitor.
-     * <p>
-     * A waiting thread can be sent {@code interrupt()} to cause it to
+     *
+     * <p>A waiting thread can be sent {@code interrupt()} to cause it to
      * prematurely stop waiting, so {@code wait} should be called in a loop to
      * check that the condition that has been waited for has been met before
      * continuing.
-     * </p>
-     * <p>
-     * While the thread waits, it gives up ownership of this object's monitor.
-     * When it is notified (or interrupted), it re-acquires the monitor before
-     * it starts running.
-     * </p>
+     *
+     * <p>While the thread waits, it gives up ownership of this object's
+     * monitor. When it is notified (or interrupted), it re-acquires the monitor
+     * before it starts running.
+     *
+     * <p>A timeout of zero means the calling thread should wait forever unless interrupted or
+     * notified.
      *
      * @param millis
      *            the maximum time to wait in milliseconds.
@@ -440,8 +452,9 @@ public class Object {
      * @throws IllegalMonitorStateException
      *             if the thread calling this method is not the owner of this
      *             object's monitor.
-     * @throws InterruptedException
-     *             if another thread interrupts this thread while it is waiting.
+     * @throws InterruptedException if the current thread has been interrupted.
+     *             The interrupted status of the current thread will be cleared before the exception
+     *             is thrown.
      * @see #notify
      * @see #notifyAll
      * @see #wait()

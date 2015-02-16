@@ -23,7 +23,13 @@
 #include <stdlib.h>
 
 // DalvikVM calls this on startup, so we can statically register all our native methods.
-int JNI_OnLoad(JavaVM* vm, void*) {
+#if defined(ANDROID_STATICALLY_LINKED)
+extern "C" int javacore_JNI_OnLoad(JavaVM* vm, void*);
+int javacore_JNI_OnLoad(JavaVM* vm, void*)
+#else
+int JNI_OnLoad(JavaVM* vm, void*)
+#endif
+{
     JNIEnv* env;
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
         ALOGE("JavaVM::GetEnv() failed");
@@ -71,7 +77,6 @@ int JNI_OnLoad(JavaVM* vm, void*) {
     REGISTER(register_libcore_io_Memory);
     REGISTER(register_libcore_io_OsConstants);
     REGISTER(register_libcore_io_Posix);
-    REGISTER(register_libcore_net_RawSocket);
     REGISTER(register_org_apache_harmony_dalvik_NativeTestTarget);
     REGISTER(register_org_apache_harmony_xml_ExpatParser);
     REGISTER(register_sun_misc_Unsafe);

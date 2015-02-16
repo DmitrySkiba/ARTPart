@@ -37,7 +37,6 @@ import dalvik.system.VMStack;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AbstractMethod;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.ArtField;
@@ -63,6 +62,7 @@ import libcore.reflect.Types;
 import libcore.util.BasicLruCache;
 import libcore.util.CollectionUtils;
 import libcore.util.EmptyArray;
+import libcore.util.SneakyThrow;
 
 /**
  * The in-memory representation of a Java class. This representation serves as
@@ -165,6 +165,9 @@ public final class Class<T> implements Serializable, AnnotatedElement, GenericDe
      * methods for the methods in the interface.
      */
     private transient Object[] ifTable;
+
+    /** Interface method table (imt), for quick "invoke-interface". */
+    private transient ArtMethod[] imTable;
 
     /** Lazily computed name of this class; always prefer calling getName(). */
     private transient String name;
@@ -952,7 +955,10 @@ public final class Class<T> implements Serializable, AnnotatedElement, GenericDe
      * method or constructor.
      */
     public Class<?> getDeclaringClass() {
-        return AnnotationAccess.getDeclaringClass(this);
+        if (AnnotationAccess.isAnonymousClass(this)) {
+            return null;
+        }
+        return AnnotationAccess.getEnclosingClass(this);
     }
 
     /**
@@ -967,9 +973,10 @@ public final class Class<T> implements Serializable, AnnotatedElement, GenericDe
             return declaringClass;
         }
         AccessibleObject member = AnnotationAccess.getEnclosingMethodOrConstructor(this);
-        return member != null
-                ? ((Member) member).getDeclaringClass()
-                : null;
+        if (member != null)  {
+            return ((Member) member).getDeclaringClass();
+        }
+        return AnnotationAccess.getEnclosingClass(this);
     }
 
     /**
@@ -1139,6 +1146,12 @@ public final class Class<T> implements Serializable, AnnotatedElement, GenericDe
      */
     public Type getGenericSuperclass() {
         Type genericSuperclass = getSuperclass();
+        // This method is specified to return null for all cases where getSuperclass
+        // returns null, i.e, for primitives, interfaces, void and java.lang.Object.
+        if (genericSuperclass == null) {
+            return null;
+        }
+
         String annotationSignature = AnnotationAccess.getSignature(this);
         if (annotationSignature != null) {
             GenericSignatureParser parser = new GenericSignatureParser(getClassLoader());
@@ -1541,7 +1554,7 @@ public final class Class<T> implements Serializable, AnnotatedElement, GenericDe
         }
         Class<?> caller = VMStack.getStackClass1();
         if (!caller.canAccess(this)) {
-            throw new IllegalAccessException(this + " is not accessible from " + caller);
+          throw new IllegalAccessException(this + " is not accessible from " + caller);
         }
         Constructor<T> init;
         try {
@@ -1553,14 +1566,13 @@ public final class Class<T> implements Serializable, AnnotatedElement, GenericDe
             throw t;
         }
         if (!caller.canAccessMember(this, init.getAccessFlags())) {
-            throw new IllegalAccessException(init + " is not accessible from " + caller);
+          throw new IllegalAccessException(init + " is not accessible from " + caller);
         }
         try {
-            return init.newInstance();
+          return init.newInstance(null, init.isAccessible());
         } catch (InvocationTargetException e) {
-            InstantiationException t = new InstantiationException(this);
-            t.initCause(e);
-            throw t;
+          SneakyThrow.sneakyThrow(e.getCause());
+          return null;  // Unreachable.
         }
     }
 

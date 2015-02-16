@@ -283,7 +283,11 @@ static jobject makeStructTimeval(JNIEnv* env, const struct timeval& tv) {
 
 static jobject makeStructUcred(JNIEnv* env, const struct ucred& u) {
   static jmethodID ctor = env->GetMethodID(JniConstants::structUcredClass, "<init>", "(III)V");
+#if defined(__APPLE__)
+  return NULL; //TODO: ucred doesn't have pid and it's not clear how to get gid
+#else
   return env->NewObject(JniConstants::structUcredClass, ctor, u.pid, u.uid, u.gid);
+#endif
 }
 
 static jobject makeStructUtsname(JNIEnv* env, const struct utsname& buf) {
@@ -800,8 +804,12 @@ static jobject Posix_getsockoptUcred(JNIEnv* env, jobject, jobject javaFd, jint 
 }
 
 static jint Posix_gettid(JNIEnv*, jobject) {
+#ifdef HAVE_GETTID
+  return gettid();
+#else
   // Neither bionic nor glibc exposes gettid(2).
   return syscall(__NR_gettid);
+#endif
 }
 
 static jint Posix_getuid(JNIEnv*, jobject) {

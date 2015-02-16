@@ -111,7 +111,7 @@ public final class Constructor<T> extends AbstractMethod implements GenericDecla
      * parameter types of this constructor. If the constructor was declared with
      * no parameters, an empty array will be returned.
      */
-    public Class<?>[] getParameterTypes() {
+    @Override public Class<?>[] getParameterTypes() {
         return super.getParameterTypes();
     }
 
@@ -283,8 +283,14 @@ public final class Constructor<T> extends AbstractMethod implements GenericDecla
      *
      * @see AccessibleObject
      */
-    public native T newInstance(Object... args) throws InstantiationException,
-        IllegalAccessException, IllegalArgumentException, InvocationTargetException;
+    public T newInstance(Object... args) throws InstantiationException,
+            IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+      return newInstance(args, isAccessible());
+    }
+
+    /** @hide */
+    public native T newInstance(Object[] args, boolean accessible) throws InstantiationException,
+            IllegalAccessException, IllegalArgumentException, InvocationTargetException;
 
     /**
      * Returns a string containing a concise, human-readable description of this
