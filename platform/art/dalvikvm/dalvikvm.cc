@@ -1,5 +1,6 @@
 /*
- * copyright (C) 2011 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
+ * Copyright (C) 2014 Dmitry Skiba
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,6 +133,12 @@ static int dalvikvm(int argc, char** argv) {
       break;
     }
     if (strncmp(argv[arg_idx], "-XXlib:", strlen("-XXlib:")) == 0) {
+#ifdef ANDROID_STATICALLY_LINKED
+      if (lib) {
+        fprintf(stderr, "-XXlib: option is not supported\n");
+        return EXIT_FAILURE;
+      }
+#endif
       lib = argv[arg_idx] + strlen("-XXlib:");
       continue;
     }
@@ -157,12 +164,14 @@ static int dalvikvm(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
+#ifndef ANDROID_STATICALLY_LINKED
   // Find the JNI_CreateJavaVM implementation.
   JniInvocation jni_invocation;
   if (!jni_invocation.Init(lib)) {
     fprintf(stderr, "Failed to initialize JNI invocation API from %s\n", lib);
     return EXIT_FAILURE;
   }
+#endif
 
   JavaVMInitArgs init_args;
   init_args.version = JNI_VERSION_1_6;

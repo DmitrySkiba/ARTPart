@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <iomanip>
 
 #include "arena_allocator.h"
 #include "base/logging.h"

@@ -20,27 +20,51 @@
 
 #include "base/logging.h"
 #include "base/stringprintf.h"
+
+#ifdef ART_USE_ARM_INSTRUCTION_SET
 #include "disassembler_arm.h"
+#endif
+
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
 #include "disassembler_arm64.h"
+#endif
+
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
 #include "disassembler_mips.h"
+#endif
+
+#ifdef ART_USE_X86_INSTRUCTION_SET
 #include "disassembler_x86.h"
+#endif
+
 
 namespace art {
 
 Disassembler* Disassembler::Create(InstructionSet instruction_set, DisassemblerOptions* options) {
-  if (instruction_set == kArm || instruction_set == kThumb2) {
-    return new arm::DisassemblerArm(options);
-  } else if (instruction_set == kArm64) {
-    return new arm64::DisassemblerArm64(options);
-  } else if (instruction_set == kMips) {
-    return new mips::DisassemblerMips(options);
-  } else if (instruction_set == kX86) {
-    return new x86::DisassemblerX86(options, false);
-  } else if (instruction_set == kX86_64) {
-    return new x86::DisassemblerX86(options, true);
-  } else {
-    UNIMPLEMENTED(FATAL) << "no disassembler for " << instruction_set;
-    return NULL;
+  switch (instruction_set) {
+#ifdef ART_USE_ARM_INSTRUCTION_SET
+    case kArm: case kThumb2:
+      return new arm::DisassemblerArm(options);
+#endif
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
+    case kArm64:
+      return new arm64::DisassemblerArm64(options);
+#endif
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
+    case kMips:
+      return new mips::DisassemblerMips(options);
+#endif
+#ifdef ART_USE_X86_INSTRUCTION_SET
+    case kX86:
+      return new x86::DisassemblerX86(options, false);
+#endif
+#ifdef ART_USE_X86_64_INSTRUCTION_SET
+    case kX86_64:
+      return new x86::DisassemblerX86(options, true);
+#endif
+    default:
+      UNIMPLEMENTED(FATAL) << "no disassembler for " << instruction_set;
+      return NULL;
   }
 }
 

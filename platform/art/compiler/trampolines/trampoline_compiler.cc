@@ -17,16 +17,32 @@
 #include "trampoline_compiler.h"
 
 #include "jni_internal.h"
+
+#ifdef ART_USE_ARM_INSTRUCTION_SET
 #include "utils/arm/assembler_arm.h"
+#endif
+
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
 #include "utils/arm64/assembler_arm64.h"
+#endif
+
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
 #include "utils/mips/assembler_mips.h"
+#endif
+
+#ifdef ART_USE_X86_INSTRUCTION_SET
 #include "utils/x86/assembler_x86.h"
+#endif
+
+#ifdef ART_USE_X86_64_INSTRUCTION_SET
 #include "utils/x86_64/assembler_x86_64.h"
+#endif
 
 #define __ assembler->
 
 namespace art {
 
+#ifdef ART_USE_ARM_INSTRUCTION_SET
 namespace arm {
 static const std::vector<uint8_t>* CreateTrampoline(EntryPointCallingConvention abi,
                                                     ThreadOffset<4> offset) {
@@ -54,7 +70,9 @@ static const std::vector<uint8_t>* CreateTrampoline(EntryPointCallingConvention 
   return entry_stub.release();
 }
 }  // namespace arm
+#endif // ART_USE_ARM_INSTRUCTION_SET
 
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
 namespace arm64 {
 static const std::vector<uint8_t>* CreateTrampoline(EntryPointCallingConvention abi,
                                                     ThreadOffset<8> offset) {
@@ -91,7 +109,9 @@ static const std::vector<uint8_t>* CreateTrampoline(EntryPointCallingConvention 
   return entry_stub.release();
 }
 }  // namespace arm64
+#endif // ART_USE_ARM64_INSTRUCTION_SET
 
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
 namespace mips {
 static const std::vector<uint8_t>* CreateTrampoline(EntryPointCallingConvention abi,
                                                     ThreadOffset<4> offset) {
@@ -121,7 +141,9 @@ static const std::vector<uint8_t>* CreateTrampoline(EntryPointCallingConvention 
   return entry_stub.release();
 }
 }  // namespace mips
+#endif // ART_USE_MIPS_INSTRUCTION_SET
 
+#ifdef ART_USE_X86_INSTRUCTION_SET
 namespace x86 {
 static const std::vector<uint8_t>* CreateTrampoline(ThreadOffset<4> offset) {
   std::unique_ptr<X86Assembler> assembler(static_cast<X86Assembler*>(Assembler::Create(kX86)));
@@ -138,7 +160,9 @@ static const std::vector<uint8_t>* CreateTrampoline(ThreadOffset<4> offset) {
   return entry_stub.release();
 }
 }  // namespace x86
+#endif // ART_USE_X86_INSTRUCTION_SET
 
+#ifdef ART_USE_X86_64_INSTRUCTION_SET
 namespace x86_64 {
 static const std::vector<uint8_t>* CreateTrampoline(ThreadOffset<8> offset) {
   std::unique_ptr<x86_64::X86_64Assembler>
@@ -156,14 +180,19 @@ static const std::vector<uint8_t>* CreateTrampoline(ThreadOffset<8> offset) {
   return entry_stub.release();
 }
 }  // namespace x86_64
+#endif // ART_USE_X86_64_INSTRUCTION_SET
 
 const std::vector<uint8_t>* CreateTrampoline64(InstructionSet isa, EntryPointCallingConvention abi,
                                                ThreadOffset<8> offset) {
   switch (isa) {
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
     case kArm64:
       return arm64::CreateTrampoline(abi, offset);
+#endif
+#ifdef ART_USE_X86_64_INSTRUCTION_SET
     case kX86_64:
       return x86_64::CreateTrampoline(offset);
+#endif
     default:
       LOG(FATAL) << "Unexpected InstructionSet: " << isa;
       return nullptr;
@@ -173,13 +202,19 @@ const std::vector<uint8_t>* CreateTrampoline64(InstructionSet isa, EntryPointCal
 const std::vector<uint8_t>* CreateTrampoline32(InstructionSet isa, EntryPointCallingConvention abi,
                                                ThreadOffset<4> offset) {
   switch (isa) {
+#ifdef ART_USE_ARM_INSTRUCTION_SET
     case kArm:
     case kThumb2:
       return arm::CreateTrampoline(abi, offset);
+#endif
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
     case kMips:
       return mips::CreateTrampoline(abi, offset);
+#endif
+#ifdef ART_USE_X86_INSTRUCTION_SET
     case kX86:
       return x86::CreateTrampoline(offset);
+#endif
     default:
       LOG(FATAL) << "Unexpected InstructionSet: " << isa;
       return nullptr;

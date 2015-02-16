@@ -21,7 +21,6 @@
 #include "common_throws.h"
 #include "debugger.h"
 #include "gc/space/bump_pointer_space.h"
-#include "gc/space/dlmalloc_space.h"
 #include "gc/space/large_object_space.h"
 #include "gc/space/space-inl.h"
 #include "gc/space/zygote_space.h"
@@ -33,6 +32,10 @@
 #include "scoped_fast_native_object_access.h"
 #include "trace.h"
 #include "well_known_classes.h"
+
+#ifdef ART_USE_DLMALLOC_ALLOCATOR
+#include "gc/space/dlmalloc_space.h"
+#endif
 
 namespace art {
 

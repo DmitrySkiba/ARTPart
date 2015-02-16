@@ -23,7 +23,6 @@
 #include "gc/accounting/card_table-inl.h"
 #include "gc/collector/semi_space.h"
 #include "gc/space/bump_pointer_space-inl.h"
-#include "gc/space/dlmalloc_space-inl.h"
 #include "gc/space/large_object_space.h"
 #include "gc/space/rosalloc_space-inl.h"
 #include "runtime.h"
@@ -31,6 +30,10 @@
 #include "thread.h"
 #include "thread-inl.h"
 #include "verify_object-inl.h"
+
+#ifdef ART_USE_DLMALLOC_ALLOCATOR
+#include "gc/space/dlmalloc_space-inl.h"
+#endif
 
 namespace art {
 namespace gc {
@@ -209,6 +212,7 @@ inline mirror::Object* Heap::TryToAllocate(Thread* self, AllocatorType allocator
       }
       break;
     }
+#ifdef ART_USE_DLMALLOC_ALLOCATOR
     case kAllocatorTypeDlMalloc: {
       if (kInstrumented && UNLIKELY(running_on_valgrind_)) {
         // If running on valgrind, we should be using the instrumented path.
@@ -219,6 +223,7 @@ inline mirror::Object* Heap::TryToAllocate(Thread* self, AllocatorType allocator
       }
       break;
     }
+#endif
     case kAllocatorTypeNonMoving: {
       ret = non_moving_space_->Alloc(self, alloc_size, bytes_allocated, usable_size);
       break;

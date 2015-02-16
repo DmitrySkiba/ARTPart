@@ -99,20 +99,28 @@ bool QuickCompiler::WriteElf(art::File* file,
 Backend* QuickCompiler::GetCodeGenerator(CompilationUnit* cu, void* compilation_unit) const {
   Mir2Lir* mir_to_lir = nullptr;
   switch (cu->instruction_set) {
+#ifdef ART_USE_ARM_INSTRUCTION_SET
     case kThumb2:
       mir_to_lir = ArmCodeGenerator(cu, cu->mir_graph.get(), &cu->arena);
       break;
+#endif
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
     case kArm64:
       mir_to_lir = Arm64CodeGenerator(cu, cu->mir_graph.get(), &cu->arena);
       break;
+#endif
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
     case kMips:
       mir_to_lir = MipsCodeGenerator(cu, cu->mir_graph.get(), &cu->arena);
       break;
+#endif
+#if defined(ART_USE_X86_INSTRUCTION_SET) || defined(ART_USE_X86_64_INSTRUCTION_SET)
     case kX86:
       // Fall-through.
     case kX86_64:
       mir_to_lir = X86CodeGenerator(cu, cu->mir_graph.get(), &cu->arena);
       break;
+#endif
     default:
       LOG(FATAL) << "Unexpected instruction set: " << cu->instruction_set;
   }
@@ -137,6 +145,7 @@ std::vector<uint8_t>* QuickCompiler::GetCallFrameInformationInitialization(
   return nullptr;
 }
 
+#ifdef ART_USE_OPTIMIZING_COMPILER
 CompiledMethod* OptimizingCompiler::Compile(const DexFile::CodeItem* code_item,
                                             uint32_t access_flags,
                                             InvokeType invoke_type,
@@ -153,5 +162,6 @@ CompiledMethod* OptimizingCompiler::Compile(const DexFile::CodeItem* code_item,
   return QuickCompiler::Compile(code_item, access_flags, invoke_type, class_def_idx, method_idx,
                                 class_loader, dex_file);
 }
+#endif // ART_USE_OPTIMIZING_COMPILER
 
 }  // namespace art

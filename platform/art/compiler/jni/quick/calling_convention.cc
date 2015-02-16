@@ -15,14 +15,28 @@
  */
 
 #include "calling_convention.h"
-
 #include "base/logging.h"
-#include "jni/quick/arm/calling_convention_arm.h"
-#include "jni/quick/arm64/calling_convention_arm64.h"
-#include "jni/quick/mips/calling_convention_mips.h"
-#include "jni/quick/x86/calling_convention_x86.h"
-#include "jni/quick/x86_64/calling_convention_x86_64.h"
 #include "utils.h"
+
+#ifdef ART_USE_ARM_INSTRUCTION_SET
+#include "jni/quick/arm/calling_convention_arm.h"
+#endif
+
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
+#include "jni/quick/arm64/calling_convention_arm64.h"
+#endif
+
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
+#include "jni/quick/mips/calling_convention_mips.h"
+#endif
+
+#ifdef ART_USE_X86_INSTRUCTION_SET
+#include "jni/quick/x86/calling_convention_x86.h"
+#endif
+
+#ifdef ART_USE_X86_64_INSTRUCTION_SET
+#include "jni/quick/x86_64/calling_convention_x86_64.h"
+#endif
 
 namespace art {
 
@@ -31,17 +45,27 @@ namespace art {
 ManagedRuntimeCallingConvention* ManagedRuntimeCallingConvention::Create(
     bool is_static, bool is_synchronized, const char* shorty, InstructionSet instruction_set) {
   switch (instruction_set) {
+#ifdef ART_USE_ARM_INSTRUCTION_SET
     case kArm:
     case kThumb2:
       return new arm::ArmManagedRuntimeCallingConvention(is_static, is_synchronized, shorty);
+#endif
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
     case kArm64:
       return new arm64::Arm64ManagedRuntimeCallingConvention(is_static, is_synchronized, shorty);
+#endif
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
     case kMips:
       return new mips::MipsManagedRuntimeCallingConvention(is_static, is_synchronized, shorty);
+#endif
+#ifdef ART_USE_X86_INSTRUCTION_SET
     case kX86:
       return new x86::X86ManagedRuntimeCallingConvention(is_static, is_synchronized, shorty);
+#endif
+#ifdef ART_USE_X86_64_INSTRUCTION_SET
     case kX86_64:
       return new x86_64::X86_64ManagedRuntimeCallingConvention(is_static, is_synchronized, shorty);
+#endif
     default:
       LOG(FATAL) << "Unknown InstructionSet: " << instruction_set;
       return NULL;
@@ -104,17 +128,27 @@ JniCallingConvention* JniCallingConvention::Create(bool is_static, bool is_synch
                                                    const char* shorty,
                                                    InstructionSet instruction_set) {
   switch (instruction_set) {
+#ifdef ART_USE_ARM_INSTRUCTION_SET
     case kArm:
     case kThumb2:
       return new arm::ArmJniCallingConvention(is_static, is_synchronized, shorty);
+#endif
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
     case kArm64:
       return new arm64::Arm64JniCallingConvention(is_static, is_synchronized, shorty);
+#endif
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
     case kMips:
       return new mips::MipsJniCallingConvention(is_static, is_synchronized, shorty);
+#endif
+#ifdef ART_USE_X86_INSTRUCTION_SET
     case kX86:
       return new x86::X86JniCallingConvention(is_static, is_synchronized, shorty);
+#endif
+#ifdef ART_USE_X86_64_INSTRUCTION_SET
     case kX86_64:
       return new x86_64::X86_64JniCallingConvention(is_static, is_synchronized, shorty);
+#endif
     default:
       LOG(FATAL) << "Unknown InstructionSet: " << instruction_set;
       return NULL;

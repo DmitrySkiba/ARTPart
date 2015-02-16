@@ -22,9 +22,7 @@
 #include "debugger.h"
 #include "dex_file-inl.h"
 #include "gc/accounting/card_table-inl.h"
-#include "gc/allocator/dlmalloc.h"
 #include "gc/heap.h"
-#include "gc/space/dlmalloc_space.h"
 #include "gc/space/image_space.h"
 #include "instruction_set.h"
 #include "intern_table.h"
@@ -39,6 +37,11 @@
 #include "thread.h"
 #include "thread_list.h"
 #include "toStringArray.h"
+
+#ifdef ART_USE_DLMALLOC_ALLOCATOR
+#include "gc/allocator/dlmalloc.h"
+#include "gc/space/dlmalloc_space.h"
+#endif
 
 namespace art {
 

@@ -19,14 +19,29 @@
 #include <algorithm>
 #include <vector>
 
-#include "arm/assembler_arm32.h"
-#include "arm/assembler_thumb2.h"
-#include "arm64/assembler_arm64.h"
-#include "mips/assembler_mips.h"
-#include "x86/assembler_x86.h"
-#include "x86_64/assembler_x86_64.h"
 #include "globals.h"
 #include "memory_region.h"
+
+#ifdef ART_USE_ARM_INSTRUCTION_SET
+#include "arm/assembler_arm32.h"
+#include "arm/assembler_thumb2.h"
+#endif
+
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
+#include "arm64/assembler_arm64.h"
+#endif
+
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
+#include "mips/assembler_mips.h"
+#endif
+
+#ifdef ART_USE_X86_INSTRUCTION_SET
+#include "x86/assembler_x86.h"
+#endif
+
+#ifdef ART_USE_X86_64_INSTRUCTION_SET
+#include "x86_64/assembler_x86_64.h"
+#endif
 
 namespace art {
 
@@ -106,18 +121,28 @@ void AssemblerBuffer::ExtendCapacity() {
 
 Assembler* Assembler::Create(InstructionSet instruction_set) {
   switch (instruction_set) {
+#ifdef ART_USE_ARM_INSTRUCTION_SET
     case kArm:
       return new arm::Arm32Assembler();
     case kThumb2:
       return new arm::Thumb2Assembler();
+#endif
+#ifdef ART_USE_ARM64_INSTRUCTION_SET
     case kArm64:
       return new arm64::Arm64Assembler();
+#endif
+#ifdef ART_USE_MIPS_INSTRUCTION_SET
     case kMips:
       return new mips::MipsAssembler();
+#endif
+#ifdef ART_USE_X86_INSTRUCTION_SET
     case kX86:
       return new x86::X86Assembler();
+#endif
+#ifdef ART_USE_X86_64_INSTRUCTION_SET
     case kX86_64:
       return new x86_64::X86_64Assembler();
+#endif
     default:
       LOG(FATAL) << "Unknown InstructionSet: " << instruction_set;
       return NULL;

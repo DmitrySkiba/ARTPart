@@ -241,7 +241,7 @@ class RegType {
   bool IsStrictlyAssignableFrom(RegType& src) SHARED_LOCKS_REQUIRED(Locks::mutator_lock_);
 
   // Are these RegTypes the same?
-  bool Equals(RegType& other) const {
+  bool Equals(const RegType& other) const {
     return GetId() == other.GetId();
   }
 

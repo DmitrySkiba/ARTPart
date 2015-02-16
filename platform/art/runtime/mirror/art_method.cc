@@ -38,7 +38,10 @@
 namespace art {
 namespace mirror {
 
+#if defined(ART_USE_PORTABLE_COMPILER)
 extern "C" void art_portable_invoke_stub(ArtMethod*, uint32_t*, uint32_t, Thread*, JValue*, char);
+#endif
+
 extern "C" void art_quick_invoke_stub(ArtMethod*, uint32_t*, uint32_t, Thread*, JValue*,
                                       const char*);
 #ifdef __LP64__
@@ -336,9 +339,12 @@ void ArtMethod::Invoke(Thread* self, uint32_t* args, uint32_t args_size, JValue*
 #else
         (*art_quick_invoke_stub)(this, args, args_size, self, result, shorty);
 #endif
-      } else {
+      }
+#if defined(ART_USE_PORTABLE_COMPILER)
+      if (IsPortableCompiled()) {
         (*art_portable_invoke_stub)(this, args, args_size, self, result, shorty[0]);
       }
+#endif
       if (UNLIKELY(self->GetException(nullptr) == Thread::GetDeoptimizationException())) {
         // Unusual case where we were running generated code and an
         // exception was thrown to force the activations to be removed from the

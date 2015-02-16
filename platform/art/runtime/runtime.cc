@@ -90,6 +90,10 @@
 #include "cutils/properties.h"
 #endif
 
+#if defined(ANDROID_STATICALLY_LINKED)
+extern "C" int javacore_JNI_OnLoad(JavaVM* vm, void*);
+#endif
+
 namespace art {
 
 static constexpr bool kEnableJavaStackTraceHandler = false;
@@ -907,6 +911,13 @@ void Runtime::InitNativeMethods() {
   // Then set up libcore, which is just a regular JNI library with a regular JNI_OnLoad.
   // Most JNI libraries can just use System.loadLibrary, but libcore can't because it's
   // the library that implements System.loadLibrary!
+#if defined(ANDROID_STATICALLY_LINKED)
+  {
+    self->TransitionFromSuspendedToRunnable();
+    javacore_JNI_OnLoad(instance_->java_vm_, NULL);
+    self->TransitionFromRunnableToSuspended(kNative);
+  }
+#else // !ANDROID_STATICALLY_LINKED
   {
     std::string mapped_name(StringPrintf(OS_SHARED_LIB_FORMAT_STR, "javacore"));
     std::string reason;
@@ -918,6 +929,7 @@ void Runtime::InitNativeMethods() {
     }
     self->TransitionFromRunnableToSuspended(kNative);
   }
+#endif // ANDROID_STATICALLY_LINKED
 
   // Initialize well known classes that may invoke runtime native methods.
   WellKnownClasses::LateInit(env);

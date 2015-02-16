@@ -44,7 +44,6 @@
 #include "gc/collector/sticky_mark_sweep.h"
 #include "gc/reference_processor.h"
 #include "gc/space/bump_pointer_space.h"
-#include "gc/space/dlmalloc_space-inl.h"
 #include "gc/space/image_space.h"
 #include "gc/space/large_object_space.h"
 #include "gc/space/rosalloc_space-inl.h"
@@ -67,6 +66,10 @@
 #include "handle_scope-inl.h"
 #include "thread_list.h"
 #include "well_known_classes.h"
+
+#ifdef ART_USE_DLMALLOC_ALLOCATOR
+#include "gc/space/dlmalloc_space-inl.h"
+#endif
 
 namespace art {
 
@@ -282,6 +285,7 @@ Heap::Heap(size_t initial_size, size_t growth_limit, size_t min_free, size_t max
   }
   // Create the non moving space first so that bitmaps don't take up the address range.
   if (separate_non_moving_space) {
+#ifdef ART_USE_DLMALLOC_ALLOCATOR
     // Non moving space is always dlmalloc since we currently don't have support for multiple
     // active rosalloc spaces.
     const size_t size = non_moving_space_mem_map->Size();
@@ -292,6 +296,9 @@ Heap::Heap(size_t initial_size, size_t growth_limit, size_t min_free, size_t max
     CHECK(non_moving_space_ != nullptr) << "Failed creating non moving space "
         << requested_alloc_space_begin;
     AddSpace(non_moving_space_);
+#else
+    LOG(FATAL) << "DlMalloc allocator is not compiled in";
+#endif
   }
   // Create other spaces based on whether or not we have a moving GC.
   if (IsMovingGc(foreground_collector_type_) && foreground_collector_type_ != kCollectorTypeGSS) {

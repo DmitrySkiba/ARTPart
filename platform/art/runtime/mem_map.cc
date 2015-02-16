@@ -159,6 +159,7 @@ static bool ContainedWithinExistingMap(uintptr_t begin,
 static bool CheckNonOverlapping(uintptr_t begin,
                                 uintptr_t end,
                                 std::string* error_msg) {
+#if !defined(__APPLE__)
   std::unique_ptr<BacktraceMap> map(BacktraceMap::Create(getpid(), true));
   if (map.get() == nullptr) {
     *error_msg = StringPrintf("Failed to build process map");
@@ -180,6 +181,10 @@ static bool CheckNonOverlapping(uintptr_t begin,
     }
   }
   return true;
+#else
+  // FIXME
+  return true;
+#endif // __APPLE__
 }
 
 // CheckMapRequest to validate a non-MAP_FAILED mmap result based on

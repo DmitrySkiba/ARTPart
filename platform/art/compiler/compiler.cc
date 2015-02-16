@@ -182,7 +182,11 @@ Compiler* Compiler::Create(CompilerDriver* driver, Compiler::Kind kind) {
       return new QuickCompiler(driver);
       break;
     case kOptimizing:
+#ifdef ART_USE_OPTIMIZING_COMPILER
       return new OptimizingCompiler(driver);
+#else
+      LOG(FATAL) << "Optimizing compiler not compiled";
+#endif
       break;
     case kPortable:
 #ifdef ART_USE_PORTABLE_COMPILER

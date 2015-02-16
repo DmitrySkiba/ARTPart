@@ -141,9 +141,11 @@ void InitEntryPoints(InterpreterEntryPoints* ipoints, JniEntryPoints* jpoints,
   // JNI
   jpoints->pDlsymLookup = art_jni_dlsym_lookup_stub;
 
+#ifdef ART_USE_PORTABLE_COMPILER
   // Portable
   ppoints->pPortableResolutionTrampoline = art_portable_resolution_trampoline;
   ppoints->pPortableToInterpreterBridge = art_portable_to_interpreter_bridge;
+#endif
 
   // Alloc
   ResetQuickAllocEntryPoints(qpoints);

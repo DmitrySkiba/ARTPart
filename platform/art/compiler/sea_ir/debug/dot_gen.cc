@@ -54,7 +54,7 @@ void DotGenerationVisitor::ToDotSSAEdges(InstructionNode* instruction) {
       art::SafeMap<int, const Type*>::const_iterator type_it = types_->find(def_it->second->Id());
       if (type_it != types_->end()) {
         art::ScopedObjectAccess soa(art::Thread::Current());
-        dot_text_ += "(" + type_it->second->Dump() + ")";
+        dot_text_ += "(" + const_cast<Type*>(type_it->second)->Dump() + ")";
       } else {
         dot_text_ += "()";
       }
@@ -86,7 +86,7 @@ void DotGenerationVisitor::ToDotSSAEdges(PhiInstructionNode* instruction) {
       art::SafeMap<int, const Type*>::const_iterator type_it = types_->find((*def_it)->Id());
       if (type_it != types_->end()) {
         art::ScopedObjectAccess soa(art::Thread::Current());
-        dot_text_ += "(" + type_it->second->Dump() + ")";
+        dot_text_ += "(" + const_cast<Type*>(type_it->second)->Dump() + ")";
       } else {
         dot_text_ += "()";
       }

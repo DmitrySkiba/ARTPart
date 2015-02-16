@@ -391,8 +391,8 @@ static constexpr inline uint64_t MsToNs(uint64_t ns) {
   return ns * 1000 * 1000;
 }
 
-#if defined(__APPLE__)
-// No clocks to specify on OS/X, fake value to pass to routines that require a clock.
+#if !defined(HAVE_POSIX_CLOCKS)
+// Fake value to pass to routines that require a clock.
 #define CLOCK_REALTIME 0xebadf00d
 #endif
 
@@ -446,6 +446,9 @@ const char* GetAndroidRoot();
 const char* GetAndroidData();
 // Find $ANDROID_DATA, /data, or return nullptr.
 const char* GetAndroidDataSafe(std::string* error_msg);
+
+// Prepend $ANDROID_FS_ROOT if it's there
+std::string MakeAndroidAbsolutePath(const std::string& path);
 
 // Returns the dalvik-cache location, or dies trying. subdir will be
 // appended to the cache location.

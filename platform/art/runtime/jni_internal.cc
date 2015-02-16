@@ -3270,26 +3270,36 @@ bool JavaVMExt::LoadNativeLibrary(const std::string& path,
   // class unloading. Libraries will only be unloaded when the reference count (incremented by
   // dlopen) becomes zero from dlclose.
 
-  // This can execute slowly for a large library on a busy system, so we
-  // want to switch from kRunnable while it executes.  This allows the GC to ignore us.
-  self->TransitionFromRunnableToSuspended(kWaitingForJniOnLoad);
-  const char* path_str = path.empty() ? nullptr : path.c_str();
-  void* handle = dlopen(path_str, RTLD_LAZY);
+  void* handle = nullptr;
+  std::string jni_on_load_name = "JNI_OnLoad";
   bool needs_native_bridge = false;
-  if (handle == nullptr) {
-    if (android::NativeBridgeIsSupported(path_str)) {
-      handle = android::NativeBridgeLoadLibrary(path_str, RTLD_LAZY);
-      needs_native_bridge = true;
+
+  const char* static_prefix = "static:";
+  if (StartsWith(path, static_prefix)) {
+    std::string name = path.substr(strlen(static_prefix));
+    jni_on_load_name.insert(0, name + "_");
+    handle = RTLD_DEFAULT;
+  } else {
+    // This can execute slowly for a large library on a busy system, so we
+    // want to switch from kRunnable while it executes.  This allows the GC to ignore us.
+    self->TransitionFromRunnableToSuspended(kWaitingForJniOnLoad);
+    const char* path_str = path.empty() ? nullptr : path.c_str();
+    handle = dlopen(path_str, RTLD_LAZY);
+    if (handle == nullptr) {
+      if (android::NativeBridgeIsSupported(path_str)) {
+        handle = android::NativeBridgeLoadLibrary(path_str, RTLD_LAZY);
+        needs_native_bridge = true;
+      }
     }
-  }
-  self->TransitionFromSuspendedToRunnable();
+    self->TransitionFromSuspendedToRunnable();
 
-  VLOG(jni) << "[Call to dlopen(\"" << path << "\", RTLD_LAZY) returned " << handle << "]";
+    VLOG(jni) << "[Call to dlopen(\"" << path << "\", RTLD_LAZY) returned " << handle << "]";
 
-  if (handle == nullptr) {
-    *detail = dlerror();
-    LOG(ERROR) << "dlopen(\"" << path << "\", RTLD_LAZY) failed: " << *detail;
-    return false;
+    if (handle == nullptr) {
+      *detail = dlerror();
+      LOG(ERROR) << "dlopen(\"" << path << "\", RTLD_LAZY) failed: " << *detail;
+      return false;
+    }
   }
 
   // Create a new entry.
@@ -3317,9 +3327,9 @@ bool JavaVMExt::LoadNativeLibrary(const std::string& path,
   void* sym = nullptr;
   if (UNLIKELY(needs_native_bridge)) {
     library->SetNeedsNativeBridge();
-    sym = library->FindSymbolWithNativeBridge("JNI_OnLoad", nullptr);
+    sym = library->FindSymbolWithNativeBridge(jni_on_load_name.c_str(), nullptr);
   } else {
-    sym = dlsym(handle, "JNI_OnLoad");
+    sym = dlsym(handle, jni_on_load_name.c_str());
   }
 
   if (sym == nullptr) {

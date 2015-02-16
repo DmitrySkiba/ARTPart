@@ -196,7 +196,7 @@ void InitTimeSpec(bool absolute, int clock, int64_t ms, int32_t ns, timespec* ts
   int64_t endSec;
 
   if (absolute) {
-#if !defined(__APPLE__)
+#if defined(HAVE_POSIX_CLOCKS)
     clock_gettime(clock, ts);
 #else
     UNUSED(clock);
@@ -1201,6 +1201,23 @@ const char* GetAndroidDataSafe(std::string* error_msg) {
   return android_data;
 }
 
+std::string MakeAndroidAbsolutePath(const std::string& path) {
+  const char* root = getenv("ANDROID_FS_ROOT");
+  if (!root) {
+    return path;
+  }
+  std::string absolute_path = root;
+  if (!EndsWith(absolute_path, "/")) {
+    absolute_path += "/";
+  }
+  if (StartsWith(path, "/")) {
+    absolute_path += path.substr(1);
+  } else {
+    absolute_path += path;
+  }
+  return absolute_path;
+}
+
 void GetDalvikCache(const char* subdir, const bool create_if_absent, std::string* dalvik_cache,
                     bool* have_android_data, bool* dalvik_cache_exists, bool* is_global_cache) {
   CHECK(subdir != nullptr);
@@ -1281,6 +1298,15 @@ static void InsertIsaDirectory(const InstructionSet isa, std::string* filename) 
   // out = /foo/bar/<isa>/baz
   size_t pos = filename->rfind('/');
   CHECK_NE(pos, std::string::npos) << *filename << " " << isa;
+  if (pos) {
+    size_t pos2 = filename->rfind('/', pos - 1);
+    if (pos2 != std::string::npos) {
+      if (!filename->compare(pos2 + 1, pos - pos2 - 1, GetInstructionSetString(isa))) {
+        // Already have 'isa' as the last component.
+        return;
+      }
+    }
+  }
   filename->insert(pos, "/", 1);
   filename->insert(pos + 1, GetInstructionSetString(isa));
 }

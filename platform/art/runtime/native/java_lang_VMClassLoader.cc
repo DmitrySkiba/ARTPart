@@ -80,7 +80,7 @@ static jstring VMClassLoader_getBootClassPathResource(JNIEnv* env, jclass, jstri
   const DexFile* dex_file = path[index];
 
   // For multidex locations, e.g., x.jar:classes2.dex, we want to look into x.jar.
-  const std::string& location(dex_file->GetBaseLocation());
+  std::string location = MakeAndroidAbsolutePath(dex_file->GetBaseLocation());
 
   std::string error_msg;
   std::unique_ptr<ZipArchive> zip_archive(ZipArchive::Open(location.c_str(), &error_msg));
