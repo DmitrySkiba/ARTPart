@@ -17,14 +17,14 @@
 #include <cutils/log.h>
 #include <cutils/sockets.h>
 
-#ifdef HAVE_ANDROID_OS
+#ifdef HAVE_LINUX_ANDROID_OS
 /* For the socket trust (credentials) check */
 #include <private/android_filesystem_config.h>
 #endif
 
 bool socket_peer_is_trusted(int fd)
 {
-#ifdef HAVE_ANDROID_OS
+#ifdef HAVE_LINUX_ANDROID_OS
     struct ucred cr;
     socklen_t len = sizeof(cr);
     int n = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &len);

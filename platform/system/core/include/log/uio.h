@@ -30,6 +30,12 @@ extern "C" {
 
 #include <stddef.h>
 
+#if defined(__APPLE__)
+
+#include <sys/socket.h>
+
+#else // !__APPLE__
+
 struct iovec {
     const void*  iov_base;
     size_t       iov_len;
@@ -37,6 +43,8 @@ struct iovec {
 
 extern int  readv( int  fd, struct iovec*  vecs, int  count );
 extern int  writev( int  fd, const struct iovec*  vecs, int  count );
+
+#endif // !__APPLE__
 
 #ifdef __cplusplus
 }

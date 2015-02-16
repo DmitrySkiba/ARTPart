@@ -44,12 +44,16 @@ extern int tgkill(int tgid, int tid, int sig);
 
 #elif defined(__APPLE__)
 
+#ifndef HAVE_GETTID
+
 #include <sys/syscall.h>
 
 // Mac OS >= 10.6 has a system call equivalent to Linux's gettid().
 static pid_t gettid() {
   return syscall(SYS_thread_selfid);
 }
+
+#endif // HAVE_GETTID
 
 #else
 

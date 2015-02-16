@@ -19,6 +19,7 @@
 
 #include <sys/types.h>
 #include <errno.h>
+#include <stdint.h>
 
 namespace android {
 
@@ -46,18 +47,18 @@ enum {
     OK                = 0,    // Everything's swell.
     NO_ERROR          = 0,    // No errors.
     
-    UNKNOWN_ERROR       = 0x80000000,
+    UNKNOWN_ERROR       = INT32_MIN + 0,
 
     NO_MEMORY           = -ENOMEM,
     INVALID_OPERATION   = -ENOSYS,
     BAD_VALUE           = -EINVAL,
-    BAD_TYPE            = 0x80000001,
+    BAD_TYPE            = INT32_MIN + 1,
     NAME_NOT_FOUND      = -ENOENT,
     PERMISSION_DENIED   = -EPERM,
     NO_INIT             = -ENODEV,
     ALREADY_EXISTS      = -EEXIST,
     DEAD_OBJECT         = -EPIPE,
-    FAILED_TRANSACTION  = 0x80000002,
+    FAILED_TRANSACTION  = INT32_MIN + 2,
     JPARKS_BROKE_IT     = -EPIPE,
 #if !defined(HAVE_MS_C_RUNTIME)
     BAD_INDEX           = -EOVERFLOW,
@@ -67,12 +68,12 @@ enum {
     UNKNOWN_TRANSACTION = -EBADMSG,
 #else    
     BAD_INDEX           = -E2BIG,
-    NOT_ENOUGH_DATA     = 0x80000003,
-    WOULD_BLOCK         = 0x80000004,
-    TIMED_OUT           = 0x80000005,
-    UNKNOWN_TRANSACTION = 0x80000006,
+    NOT_ENOUGH_DATA     = INT32_MIN + 3,
+    WOULD_BLOCK         = INT32_MIN + 4,
+    TIMED_OUT           = INT32_MIN + 5,
+    UNKNOWN_TRANSACTION = INT32_MIN + 6,
 #endif    
-    FDS_NOT_ALLOWED     = 0x80000007,
+    FDS_NOT_ALLOWED     = INT32_MIN + 7,
 };
 
 // Restore define; enumeration is in "android" namespace, so the value defined

@@ -309,7 +309,7 @@ pid_t androidGetTid()
 #endif
 }
 
-#ifdef HAVE_ANDROID_OS
+#ifdef HAVE_LINUX_ANDROID_OS
 int androidSetThreadPriority(pid_t tid, int pri)
 {
     int rc = 0;
@@ -345,7 +345,18 @@ int androidGetThreadPriority(pid_t tid) {
 #endif
 }
 
-#endif
+#else // !HAVE_LINUX_ANDROID_OS
+
+int androidSetThreadPriority(pid_t tid, int pri)
+{
+    return 0;
+}
+
+int androidGetThreadPriority(pid_t tid) {
+    return ANDROID_PRIORITY_NORMAL;
+}
+
+#endif // HAVE_LINUX_ANDROID_OS
 
 namespace android {
 

@@ -31,6 +31,16 @@
 
 #if defined(__APPLE__)
 
+#include <TargetConditionals.h>
+
+#if TARGET_OS_IPHONE
+
+map_info_t* load_map_info_list(pid_t pid) {
+    return NULL;
+}
+
+#else // !TARGET_OS_IPHONE
+
 // Mac OS vmmap(1) output:
 // __TEXT                 0009f000-000a1000 [    8K     8K] r-x/rwx SM=COW  /Volumes/android/dalvik-dev/out/host/darwin-x86/bin/libcorkscrew_test\n
 // 012345678901234567890123456789012345678901234567890123456789
@@ -87,7 +97,9 @@ map_info_t* load_map_info_list(pid_t pid) {
     return milist;
 }
 
-#else
+#endif // !TARGET_OS_IPHONE
+
+#else // !__APPLE__
 
 // Linux /proc/<pid>/maps lines:
 // 6f000000-6f01e000 rwxp 00000000 00:0c 16389419   /system/lib/libcomposer.so\n

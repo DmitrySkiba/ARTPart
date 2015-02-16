@@ -112,3 +112,8 @@ int ashmem_get_size_region(int fd)
 
         return (int)buf.st_size;  // TODO: care about overflow (> 2GB file)?
 }
+
+int ashmem_purge_all_caches(int fd)
+{
+  return 0;
+}

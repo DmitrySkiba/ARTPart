@@ -19,7 +19,7 @@
  * System clock functions.
  */
 
-#ifdef HAVE_ANDROID_OS
+#ifdef HAVE_LINUX_ANDROID_OS
 #include <linux/ioctl.h>
 #include <linux/rtc.h>
 #include <utils/Atomic.h>
@@ -110,7 +110,7 @@ static inline void checkTimeStamps(int64_t timestamp,
  */
 int64_t elapsedRealtimeNano()
 {
-#ifdef HAVE_ANDROID_OS
+#ifdef HAVE_LINUX_ANDROID_OS
     struct timespec ts;
     int result;
     int64_t timestamp;

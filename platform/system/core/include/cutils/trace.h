@@ -19,6 +19,7 @@
 
 #include <sys/cdefs.h>
 #include <sys/types.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -80,7 +81,7 @@ __BEGIN_DECLS
 #error ATRACE_TAG must be defined to be one of the tags defined in cutils/trace.h
 #endif
 
-#ifdef HAVE_ANDROID_OS
+#ifdef HAVE_LINUX_ANDROID_OS
 /**
  * Maximum size of a message that can be logged to the trace buffer.
  * Note this message includes a tag, the pid, and the string given as the name.
@@ -276,7 +277,7 @@ static inline void atrace_int64(uint64_t tag, const char* name, int64_t value)
     }
 }
 
-#else // not HAVE_ANDROID_OS
+#else // not HAVE_LINUX_ANDROID_OS
 
 #define ATRACE_INIT()
 #define ATRACE_GET_ENABLED_TAGS()
@@ -286,8 +287,18 @@ static inline void atrace_int64(uint64_t tag, const char* name, int64_t value)
 #define ATRACE_ASYNC_BEGIN(name, cookie)
 #define ATRACE_ASYNC_END(name, cookie)
 #define ATRACE_INT(name, value)
+#define ATRACE_INT64(name, value)
 
-#endif // not HAVE_ANDROID_OS
+#define atrace_get_enabled_tags() 0
+#define atrace_int(tag, name, value)
+#define atrace_begin(tag, name)
+#define atrace_end(tag)
+#define atrace_async_begin(tag, name, cookie)
+#define atrace_async_end(tag, name, cookie)
+#define atrace_set_debuggable(debuggable)
+#define atrace_set_tracing_enabled(enabled)
+
+#endif // not HAVE_LINUX_ANDROID_OS
 
 __END_DECLS
 
