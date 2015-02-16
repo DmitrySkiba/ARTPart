@@ -50,8 +50,10 @@ struct ArrayCounter {
     ArrayCounter(const char* const* strings) : strings(strings) {}
     size_t operator()() {
         size_t count = 0;
-        while (strings[count] != NULL) {
-            ++count;
+        if (strings) {
+          while (strings[count] != NULL) {
+              ++count;
+          }
         }
         return count;
     }

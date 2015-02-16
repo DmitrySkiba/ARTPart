@@ -19,6 +19,8 @@
 
 #include <jni.h>
 
+#define NO_JNIINVOCATION // TODO: build JniInvocation and only support Init(NULL)
+
 // JniInvocation adds a layer of indirection for applications using
 // the JNI invocation API to allow the JNI implementation to be
 // selected dynamically. Apps can specify a specific implementation to
