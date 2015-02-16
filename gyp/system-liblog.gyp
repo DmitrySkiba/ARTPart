@@ -29,7 +29,7 @@
       'type': 'static_library',
 
       'sources': [
-        '<(local_root)/logd_write.c',
+        '<(local_root)/logd_print.c',
       ],
     },
   ],

@@ -16,7 +16,7 @@
 
 #include <pthread.h>
 #include <sys/types.h>
-#include "bionic_pthread.h"
+#include "private/bionic_pthread.h"
 #include <assert.h>
 #include <errno.h>
 

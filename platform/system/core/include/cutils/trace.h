@@ -17,14 +17,15 @@
 #ifndef _LIBS_CUTILS_TRACE_H
 #define _LIBS_CUTILS_TRACE_H
 
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include <unistd.h>
-#include <cutils/compiler.h>
 
+#include <cutils/compiler.h>
 #ifdef ANDROID_SMP
 #include <cutils/atomic-inline.h>
 #else
@@ -68,7 +69,9 @@ __BEGIN_DECLS
 #define ATRACE_TAG_RESOURCES        (1<<13)
 #define ATRACE_TAG_DALVIK           (1<<14)
 #define ATRACE_TAG_RS               (1<<15)
-#define ATRACE_TAG_LAST             ATRACE_TAG_RS
+#define ATRACE_TAG_BIONIC           (1<<16)
+#define ATRACE_TAG_POWER            (1<<17)
+#define ATRACE_TAG_LAST             ATRACE_TAG_POWER
 
 // Reserved for initialization.
 #define ATRACE_TAG_NOT_READY        (1LL<<63)
@@ -81,7 +84,7 @@ __BEGIN_DECLS
 #error ATRACE_TAG must be defined to be one of the tags defined in cutils/trace.h
 #endif
 
-#ifdef HAVE_LINUX_ANDROID_OS
+#ifdef HAVE_ANDROID_OS
 /**
  * Maximum size of a message that can be logged to the trace buffer.
  * Note this message includes a tag, the pid, and the string given as the name.
@@ -218,8 +221,8 @@ static inline void atrace_async_begin(uint64_t tag, const char* name,
         char buf[ATRACE_MESSAGE_LENGTH];
         size_t len;
 
-        len = snprintf(buf, ATRACE_MESSAGE_LENGTH, "S|%d|%s|%d", getpid(),
-                name, cookie);
+        len = snprintf(buf, ATRACE_MESSAGE_LENGTH, "S|%d|%s|%" PRId32,
+                getpid(), name, cookie);
         write(atrace_marker_fd, buf, len);
     }
 }
@@ -236,8 +239,8 @@ static inline void atrace_async_end(uint64_t tag, const char* name,
         char buf[ATRACE_MESSAGE_LENGTH];
         size_t len;
 
-        len = snprintf(buf, ATRACE_MESSAGE_LENGTH, "F|%d|%s|%d", getpid(),
-                name, cookie);
+        len = snprintf(buf, ATRACE_MESSAGE_LENGTH, "F|%d|%s|%" PRId32,
+                getpid(), name, cookie);
         write(atrace_marker_fd, buf, len);
     }
 }
@@ -254,7 +257,7 @@ static inline void atrace_int(uint64_t tag, const char* name, int32_t value)
         char buf[ATRACE_MESSAGE_LENGTH];
         size_t len;
 
-        len = snprintf(buf, ATRACE_MESSAGE_LENGTH, "C|%d|%s|%d",
+        len = snprintf(buf, ATRACE_MESSAGE_LENGTH, "C|%d|%s|%" PRId32,
                 getpid(), name, value);
         write(atrace_marker_fd, buf, len);
     }
@@ -271,13 +274,13 @@ static inline void atrace_int64(uint64_t tag, const char* name, int64_t value)
         char buf[ATRACE_MESSAGE_LENGTH];
         size_t len;
 
-        len = snprintf(buf, ATRACE_MESSAGE_LENGTH, "C|%d|%s|%lld",
+        len = snprintf(buf, ATRACE_MESSAGE_LENGTH, "C|%d|%s|%" PRId64,
                 getpid(), name, value);
         write(atrace_marker_fd, buf, len);
     }
 }
 
-#else // not HAVE_LINUX_ANDROID_OS
+#else // not HAVE_ANDROID_OS
 
 #define ATRACE_INIT()
 #define ATRACE_GET_ENABLED_TAGS()
@@ -287,18 +290,8 @@ static inline void atrace_int64(uint64_t tag, const char* name, int64_t value)
 #define ATRACE_ASYNC_BEGIN(name, cookie)
 #define ATRACE_ASYNC_END(name, cookie)
 #define ATRACE_INT(name, value)
-#define ATRACE_INT64(name, value)
 
-#define atrace_get_enabled_tags() 0
-#define atrace_int(tag, name, value)
-#define atrace_begin(tag, name)
-#define atrace_end(tag)
-#define atrace_async_begin(tag, name, cookie)
-#define atrace_async_end(tag, name, cookie)
-#define atrace_set_debuggable(debuggable)
-#define atrace_set_tracing_enabled(enabled)
-
-#endif // not HAVE_LINUX_ANDROID_OS
+#endif // not HAVE_ANDROID_OS
 
 __END_DECLS
 

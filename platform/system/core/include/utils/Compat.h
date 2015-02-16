@@ -55,7 +55,7 @@ static inline ssize_t pread64(int fd, void* buf, size_t nbytes, off64_t offset) 
 #ifndef TEMP_FAILURE_RETRY
 /* Used to retry syscalls that can return EINTR. */
 #define TEMP_FAILURE_RETRY(exp) ({         \
-    __typeof__ (exp) _rc;                  \
+    __typeof__ (exp) _rc;                      \
     do {                                   \
         _rc = (exp);                       \
     } while (_rc == -1 && errno == EINTR); \

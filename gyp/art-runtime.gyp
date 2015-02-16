@@ -33,7 +33,6 @@
         '<!(<(dependency) system-include)',
         '<!(<(dependency) system-libcutils)',
         '<!(<(dependency) system-libutils)',
-        '<!(<(dependency) system-libcorscrew)',
         '<!(<(dependency) system-liblog)',
         '<!(<(dependency) system-libnativebridge)',
         '<!(<(dependency) system-libziparchive)',

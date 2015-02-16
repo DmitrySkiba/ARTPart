@@ -30,7 +30,7 @@
 
       'dependencies': [
         '<!(<(dependency) frameworks-include)',
-        '<!(<(dependency) system-libcorscrew)',
+        '<!(<(dependency) libnativehelper)', # for UniquePtr.h, TODO: libnativehelper-include
       ],
 
       'sources': [

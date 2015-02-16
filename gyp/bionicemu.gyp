@@ -40,7 +40,6 @@
       ],
 
       'sources': [
-        '<(local_root)/src/bionic_time.c',
         '<(local_root)/src/bionic_pthread.c',
       ],
     }

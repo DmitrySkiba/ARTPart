@@ -98,7 +98,7 @@
     },
 
     'defines': [
-      'HAVE_ANDROID_OS',
+      'HAVE_ANDROID_OS', # Use (undefined) HAVE_LINUX_ANDROID_OS for Linux-specific stuff
       'HAVE_POSIX_FILEMAP',
       'HAVE_PTHREADS',
       'HAVE_STRLCPY',
@@ -107,6 +107,7 @@
       "OS_PATH_SEPARATOR='/'",
       'OS_SHARED_LIB_FORMAT_STR="lib%s.dylib"',
       'ANDROID_STATICALLY_LINKED',
+      'HAVE_SYS_UIO_H',
     ],
 
     'xcode_settings': {

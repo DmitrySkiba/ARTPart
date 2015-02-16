@@ -48,7 +48,7 @@ int ashmem_create_region(const char *name, size_t size)
 		return fd;
 
 	if (name) {
-		char buf[ASHMEM_NAME_LEN];
+		char buf[ASHMEM_NAME_LEN] = {0};
 
 		strlcpy(buf, name, sizeof(buf));
 		ret = ioctl(fd, ASHMEM_SET_NAME, buf);
@@ -87,9 +87,4 @@ int ashmem_unpin_region(int fd, size_t offset, size_t len)
 int ashmem_get_size_region(int fd)
 {
   return ioctl(fd, ASHMEM_GET_SIZE, NULL);
-}
-
-int ashmem_purge_all_caches(int fd)
-{
-  return ioctl(fd, ASHMEM_PURGE_ALL_CACHES, NULL);
 }

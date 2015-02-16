@@ -16,123 +16,62 @@
 
 #define LOG_TAG "CallStack"
 
-#include <string.h>
-
-#include <utils/Log.h>
-#include <utils/Errors.h>
 #include <utils/CallStack.h>
-#include <corkscrew/backtrace.h>
+#include <utils/Printer.h>
+#include <utils/Errors.h>
+#include <utils/Log.h>
+#include <UniquePtr.h>
 
-/*****************************************************************************/
+#include <backtrace/Backtrace.h>
+
 namespace android {
 
-CallStack::CallStack() :
-        mCount(0) {
+CallStack::CallStack() {
 }
 
-CallStack::CallStack(const char* logtag, int32_t ignoreDepth, int32_t maxDepth) {
-    this->update(ignoreDepth+1, maxDepth);
-    this->dump(logtag);
-}
-
-CallStack::CallStack(const CallStack& rhs) :
-        mCount(rhs.mCount) {
-    if (mCount) {
-        memcpy(mStack, rhs.mStack, mCount * sizeof(backtrace_frame_t));
-    }
+CallStack::CallStack(const char* logtag, int32_t ignoreDepth) {
+    this->update(ignoreDepth+1);
+    this->log(logtag);
 }
 
 CallStack::~CallStack() {
 }
 
-CallStack& CallStack::operator = (const CallStack& rhs) {
-    mCount = rhs.mCount;
-    if (mCount) {
-        memcpy(mStack, rhs.mStack, mCount * sizeof(backtrace_frame_t));
+void CallStack::update(int32_t ignoreDepth, pid_t tid) {
+    mFrameLines.clear();
+
+    UniquePtr<Backtrace> backtrace(Backtrace::Create(BACKTRACE_CURRENT_PROCESS, tid));
+    if (!backtrace->Unwind(ignoreDepth)) {
+        ALOGW("%s: Failed to unwind callstack.", __FUNCTION__);
     }
-    return *this;
-}
-
-bool CallStack::operator == (const CallStack& rhs) const {
-    if (mCount != rhs.mCount)
-        return false;
-    return !mCount || memcmp(mStack, rhs.mStack, mCount * sizeof(backtrace_frame_t)) == 0;
-}
-
-bool CallStack::operator != (const CallStack& rhs) const {
-    return !operator == (rhs);
-}
-
-bool CallStack::operator < (const CallStack& rhs) const {
-    if (mCount != rhs.mCount)
-        return mCount < rhs.mCount;
-    return memcmp(mStack, rhs.mStack, mCount * sizeof(backtrace_frame_t)) < 0;
-}
-
-bool CallStack::operator >= (const CallStack& rhs) const {
-    return !operator < (rhs);
-}
-
-bool CallStack::operator > (const CallStack& rhs) const {
-    if (mCount != rhs.mCount)
-        return mCount > rhs.mCount;
-    return memcmp(mStack, rhs.mStack, mCount * sizeof(backtrace_frame_t)) > 0;
-}
-
-bool CallStack::operator <= (const CallStack& rhs) const {
-    return !operator > (rhs);
-}
-
-const void* CallStack::operator [] (int index) const {
-    if (index >= int(mCount))
-        return 0;
-    return reinterpret_cast<const void*>(mStack[index].absolute_pc);
-}
-
-void CallStack::clear() {
-    mCount = 0;
-}
-
-void CallStack::update(int32_t ignoreDepth, int32_t maxDepth) {
-    if (maxDepth > MAX_DEPTH) {
-        maxDepth = MAX_DEPTH;
+    for (size_t i = 0; i < backtrace->NumFrames(); i++) {
+      mFrameLines.push_back(String8(backtrace->FormatFrameData(i).c_str()));
     }
-    ssize_t count = unwind_backtrace(mStack, ignoreDepth + 1, maxDepth);
-    mCount = count > 0 ? count : 0;
 }
 
-void CallStack::dump(const char* logtag, const char* prefix) const {
-    backtrace_symbol_t symbols[mCount];
+void CallStack::log(const char* logtag, android_LogPriority priority, const char* prefix) const {
+    LogPrinter printer(logtag, priority, prefix, /*ignoreBlankLines*/false);
+    print(printer);
+}
 
-    get_backtrace_symbols(mStack, mCount, symbols);
-    for (size_t i = 0; i < mCount; i++) {
-        char line[MAX_BACKTRACE_LINE_LENGTH];
-        format_backtrace_line(i, &mStack[i], &symbols[i],
-                line, MAX_BACKTRACE_LINE_LENGTH);
-        ALOG(LOG_DEBUG, logtag, "%s%s",
-                prefix ? prefix : "",
-                line);
-    }
-    free_backtrace_symbols(symbols, mCount);
+void CallStack::dump(int fd, int indent, const char* prefix) const {
+    FdPrinter printer(fd, indent, prefix);
+    print(printer);
 }
 
 String8 CallStack::toString(const char* prefix) const {
     String8 str;
-    backtrace_symbol_t symbols[mCount];
 
-    get_backtrace_symbols(mStack, mCount, symbols);
-    for (size_t i = 0; i < mCount; i++) {
-        char line[MAX_BACKTRACE_LINE_LENGTH];
-        format_backtrace_line(i, &mStack[i], &symbols[i],
-                line, MAX_BACKTRACE_LINE_LENGTH);
-        if (prefix) {
-            str.append(prefix);
-        }
-        str.append(line);
-        str.append("\n");
-    }
-    free_backtrace_symbols(symbols, mCount);
+    String8Printer printer(&str, prefix);
+    print(printer);
+
     return str;
+}
+
+void CallStack::print(Printer& printer) const {
+    for (size_t i = 0; i < mFrameLines.size(); i++) {
+        printer.printLine(mFrameLines[i]);
+    }
 }
 
 }; // namespace android

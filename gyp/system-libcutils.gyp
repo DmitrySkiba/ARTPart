@@ -41,6 +41,7 @@
         '<(local_root)/sockets.c',
         '<(local_root)/socket_local_client.c',
         '<(local_root)/socket_local_server.c',
+        '<(local_root)/trace.c',
       ],
     },
   ],
