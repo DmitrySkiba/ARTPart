@@ -1294,7 +1294,10 @@ class PBXGroup(XCHierarchicalElement):
       # Hierarchical recursion.  Add or get a PBXGroup corresponding to the
       # outermost path component, and then recurse into it, chopping off that
       # path component.
-      next_dir = path_split[0]
+      if path_split[0]:
+        next_dir = path_split[0]
+      else:
+        next_dir = posixpath.sep
       group_ref = self.GetChildByPath(next_dir)
       if group_ref != None:
         assert group_ref.__class__ == PBXGroup
