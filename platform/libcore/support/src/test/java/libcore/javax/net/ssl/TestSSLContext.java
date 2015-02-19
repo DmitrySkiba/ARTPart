@@ -33,7 +33,6 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509TrustManager;
 import junit.framework.Assert;
 import libcore.java.security.StandardNames;
@@ -81,8 +80,8 @@ public final class TestSSLContext extends Assert {
     public final char[] clientStorePassword;
     public final KeyStore serverKeyStore;
     public final char[] serverStorePassword;
-    public final X509ExtendedKeyManager clientKeyManager;
-    public final X509ExtendedKeyManager serverKeyManager;
+    public final KeyManager[] clientKeyManagers;
+    public final KeyManager[] serverKeyManagers;
     public final X509TrustManager clientTrustManager;
     public final X509TrustManager serverTrustManager;
     public final SSLContext clientContext;
@@ -95,8 +94,8 @@ public final class TestSSLContext extends Assert {
                            char[] clientStorePassword,
                            KeyStore serverKeyStore,
                            char[] serverStorePassword,
-                           X509ExtendedKeyManager clientKeyManager,
-                           X509ExtendedKeyManager serverKeyManager,
+                           KeyManager[] clientKeyManagers,
+                           KeyManager[] serverKeyManagers,
                            X509TrustManager clientTrustManager,
                            X509TrustManager serverTrustManager,
                            SSLContext clientContext,
@@ -108,8 +107,8 @@ public final class TestSSLContext extends Assert {
         this.clientStorePassword = clientStorePassword;
         this.serverKeyStore = serverKeyStore;
         this.serverStorePassword = serverStorePassword;
-        this.clientKeyManager = clientKeyManager;
-        this.serverKeyManager = serverKeyManager;
+        this.clientKeyManagers = clientKeyManagers;
+        this.serverKeyManagers = serverKeyManagers;
         this.clientTrustManager = clientTrustManager;
         this.serverTrustManager = serverTrustManager;
         this.clientContext = clientContext;
@@ -141,20 +140,27 @@ public final class TestSSLContext extends Assert {
      * TestSSLContext creation method that allows separate creation of server key store
      */
     public static TestSSLContext create(TestKeyStore client, TestKeyStore server) {
-        String provider = StandardNames.JSSE_PROVIDER_NAME;
-        return create(client, server, provider, provider);
+        return createWithAdditionalKeyManagers(client, server, null, null);
     }
-    public static TestSSLContext create(TestKeyStore client, TestKeyStore server,
-                                        String clientProvider, String serverProvider) {
-        String protocol = "TLS";
-        SSLContext clientContext = createSSLContext(protocol, clientProvider,
-                                                    client.keyManagers, client.trustManagers);
-        SSLContext serverContext = createSSLContext(protocol, serverProvider,
-                                                    server.keyManagers, server.trustManagers);
+
+    /**
+     * TestSSLContext creation method that allows separate creation of server key store and
+     * the use of additional {@code KeyManager} instances
+     */
+    public static TestSSLContext createWithAdditionalKeyManagers(
+            TestKeyStore client, TestKeyStore server,
+            KeyManager[] additionalClientKeyManagers, KeyManager[] additionalServerKeyManagers) {
+        String protocol = "TLSv1.2";
+        KeyManager[] clientKeyManagers = concat(client.keyManagers, additionalClientKeyManagers);
+        KeyManager[] serverKeyManagers = concat(server.keyManagers, additionalServerKeyManagers);
+        SSLContext clientContext =
+                createSSLContext(protocol, clientKeyManagers, client.trustManagers);
+        SSLContext serverContext =
+                createSSLContext(protocol, serverKeyManagers, server.trustManagers);
         return create(client.keyStore, client.storePassword,
                       server.keyStore, server.storePassword,
-                      client.keyManagers[0],
-                      server.keyManagers[0],
+                      clientKeyManagers,
+                      serverKeyManagers,
                       client.trustManagers[0],
                       server.trustManagers[0],
                       clientContext,
@@ -166,8 +172,8 @@ public final class TestSSLContext extends Assert {
      */
     public static TestSSLContext create(KeyStore clientKeyStore, char[] clientStorePassword,
                                         KeyStore serverKeyStore, char[] serverStorePassword,
-                                        KeyManager clientKeyManagers,
-                                        KeyManager serverKeyManagers,
+                                        KeyManager[] clientKeyManagers,
+                                        KeyManager[] serverKeyManagers,
                                         TrustManager clientTrustManagers,
                                         TrustManager serverTrustManagers,
                                         SSLContext clientContext,
@@ -180,8 +186,8 @@ public final class TestSSLContext extends Assert {
 
             return new TestSSLContext(clientKeyStore, clientStorePassword,
                                       serverKeyStore, serverStorePassword,
-                                      (X509ExtendedKeyManager) clientKeyManagers,
-                                      (X509ExtendedKeyManager) serverKeyManagers,
+                                      clientKeyManagers,
+                                      serverKeyManagers,
                                       (X509TrustManager) clientTrustManagers,
                                       (X509TrustManager) serverTrustManagers,
                                       clientContext, serverContext,
@@ -199,12 +205,11 @@ public final class TestSSLContext extends Assert {
      * using the certificates authorities from the same KeyStore.
      */
     public static final SSLContext createSSLContext(final String protocol,
-                                                    final String provider,
                                                     final KeyManager[] keyManagers,
                                                     final TrustManager[] trustManagers)
     {
         try {
-            SSLContext context = SSLContext.getInstance(protocol, provider);
+            SSLContext context = SSLContext.getInstance(protocol);
             context.init(keyManagers, trustManagers, new SecureRandom());
             return context;
         } catch (Exception e) {
@@ -301,5 +306,18 @@ public final class TestSSLContext extends Assert {
                 return set(sf.createSocket(s, host, port, autoClose));
             }
         };
+    }
+
+    private static KeyManager[] concat(KeyManager[] a, KeyManager[] b) {
+        if ((a == null) || (a.length == 0)) {
+            return b;
+        }
+        if ((b == null) || (b.length == 0)) {
+            return a;
+        }
+        KeyManager[] result = new KeyManager[a.length + b.length];
+        System.arraycopy(a, 0, result, 0, a.length);
+        System.arraycopy(b, 0, result, a.length, b.length);
+        return result;
     }
 }

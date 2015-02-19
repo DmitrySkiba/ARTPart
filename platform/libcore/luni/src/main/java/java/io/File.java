@@ -17,19 +17,19 @@
 
 package java.io;
 
+import android.system.ErrnoException;
+import android.system.StructStat;
+import android.system.StructStatVfs;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import libcore.io.ErrnoException;
+import libcore.io.DeleteOnExit;
 import libcore.io.IoUtils;
 import libcore.io.Libcore;
-import libcore.io.StructStat;
-import libcore.io.StructStatVfs;
-import org.apache.harmony.luni.util.DeleteOnExit;
-import static libcore.io.OsConstants.*;
+import static android.system.OsConstants.*;
 
 /**
  * An "abstract" representation of a file system entity identified by a
@@ -411,15 +411,10 @@ public class File implements Serializable, Comparable<File> {
      *             if an I/O error occurs.
      */
     public String getCanonicalPath() throws IOException {
-        return realpath(getAbsolutePath());
+        return canonicalizePath(getAbsolutePath());
     }
 
-    /**
-     * TODO: move this stuff to libcore.os.
-     * @hide
-     */
-    private static native String realpath(String path);
-    private static native String readlink(String path);
+    private static native String canonicalizePath(String path);
 
     /**
      * Returns a new file created using the canonical path of this file.

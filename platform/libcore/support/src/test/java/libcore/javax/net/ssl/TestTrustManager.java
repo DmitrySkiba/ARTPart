@@ -17,6 +17,8 @@
 package libcore.javax.net.ssl;
 
 import java.io.PrintStream;
+import java.net.Socket;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.security.cert.CertificateException;
@@ -45,10 +47,10 @@ public final class TestTrustManager implements X509TrustManager {
     }
 
     public static TrustManager wrap(TrustManager trustManager) {
-        if (!(trustManager instanceof X509TrustManager)) {
-            return trustManager;
+        if (trustManager instanceof X509TrustManager) {
+            return new TestTrustManager((X509TrustManager) trustManager);
         }
-        return new TestTrustManager((X509TrustManager) trustManager);
+        return trustManager;
     }
 
     public TestTrustManager(X509TrustManager trustManager) {

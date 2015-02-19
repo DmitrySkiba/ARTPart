@@ -18,8 +18,10 @@ package libcore.javax.crypto;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -30,37 +32,134 @@ import junit.framework.TestCase;
 
 public final class CipherInputStreamTest extends TestCase {
 
-    private final byte[] keyBytes = { 127, -2, -95, -39, 35, 118, 121, -92 };
+    private final byte[] aesKeyBytes = {
+            (byte) 0x50, (byte) 0x98, (byte) 0xF2, (byte) 0xC3, (byte) 0x85, (byte) 0x23,
+            (byte) 0xA3, (byte) 0x33, (byte) 0x50, (byte) 0x98, (byte) 0xF2, (byte) 0xC3,
+            (byte) 0x85, (byte) 0x23, (byte) 0xA3, (byte) 0x33,
+    };
+
+    private final byte[] aesIvBytes = {
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+    };
+
+    private final byte[] aesCipherText = {
+            (byte) 0x2F, (byte) 0x2C, (byte) 0x74, (byte) 0x31, (byte) 0xFF, (byte) 0xCC,
+            (byte) 0x28, (byte) 0x7D, (byte) 0x59, (byte) 0xBD, (byte) 0xE5, (byte) 0x0A,
+            (byte) 0x30, (byte) 0x7E, (byte) 0x6A, (byte) 0x4A
+    };
+
+    private final byte[] rc4CipherText = {
+            (byte) 0x88, (byte) 0x01, (byte) 0xE3, (byte) 0x52, (byte) 0x7B
+    };
+
     private final String plainText = "abcde";
-    private final byte[] cipherText = { 121, -124, -106, 43, -55, -67, -105, -75 };
     private SecretKey key;
+    private SecretKey rc4Key;
+    private AlgorithmParameterSpec iv;
 
     @Override protected void setUp() throws Exception {
-        key = new SecretKeySpec(keyBytes, "DES");
+        key = new SecretKeySpec(aesKeyBytes, "AES");
+        rc4Key = new SecretKeySpec(aesKeyBytes, "RC4");
+        iv = new IvParameterSpec(aesIvBytes);
+    }
+
+    private static class MeasuringInputStream extends FilterInputStream {
+        private int totalRead;
+
+        protected MeasuringInputStream(InputStream in) {
+            super(in);
+        }
+
+        @Override
+        public int read() throws IOException {
+            int c = super.read();
+            totalRead++;
+            return c;
+        }
+
+        @Override
+        public int read(byte[] buffer, int byteOffset, int byteCount) throws IOException {
+            int numRead = super.read(buffer, byteOffset, byteCount);
+            if (numRead != -1) {
+                totalRead += numRead;
+            }
+            return numRead;
+        }
+
+        public int getTotalRead() {
+            return totalRead;
+        }
+    }
+
+    public void testAvailable() throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, key, iv);
+        MeasuringInputStream in = new MeasuringInputStream(new ByteArrayInputStream(aesCipherText));
+        InputStream cin = new CipherInputStream(in, cipher);
+        assertTrue(cin.read() != -1);
+        assertEquals(aesCipherText.length, in.getTotalRead());
+    }
+
+    public void testDecrypt_NullInput_Discarded() throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, key, iv);
+        InputStream in = new CipherInputStream(new ByteArrayInputStream(aesCipherText), cipher);
+        int discard = 3;
+        while (discard != 0) {
+            discard -= in.read(null, 0, discard);
+        }
+        byte[] bytes = readAll(in);
+        assertEquals(Arrays.toString(plainText.substring(3).getBytes("UTF-8")),
+                Arrays.toString(bytes));
     }
 
     public void testEncrypt() throws Exception {
-        Cipher cipher = Cipher.getInstance("DES");
-        cipher.init(Cipher.ENCRYPT_MODE, key);
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, key, iv);
         InputStream in = new CipherInputStream(
                 new ByteArrayInputStream(plainText.getBytes("UTF-8")), cipher);
         byte[] bytes = readAll(in);
-        assertEquals(Arrays.toString(cipherText), Arrays.toString(bytes));
+        assertEquals(Arrays.toString(aesCipherText), Arrays.toString(bytes));
+
+        // Reading again shouldn't throw an exception.
+        assertEquals(-1, in.read());
+    }
+
+    public void testEncrypt_RC4() throws Exception {
+        Cipher cipher = Cipher.getInstance("RC4");
+        cipher.init(Cipher.ENCRYPT_MODE, rc4Key);
+        InputStream in = new CipherInputStream(
+                new ByteArrayInputStream(plainText.getBytes("UTF-8")), cipher);
+        byte[] bytes = readAll(in);
+        assertEquals(Arrays.toString(rc4CipherText), Arrays.toString(bytes));
+
+        // Reading again shouldn't throw an exception.
+        assertEquals(-1, in.read());
     }
 
     public void testDecrypt() throws Exception {
-        Cipher cipher = Cipher.getInstance("DES");
-        cipher.init(Cipher.DECRYPT_MODE, key);
-        InputStream in = new CipherInputStream(new ByteArrayInputStream(cipherText), cipher);
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, key, iv);
+        InputStream in = new CipherInputStream(new ByteArrayInputStream(aesCipherText), cipher);
         byte[] bytes = readAll(in);
-        assertEquals(plainText, new String(bytes, "UTF-8"));
+        assertEquals(Arrays.toString(plainText.getBytes("UTF-8")), Arrays.toString(bytes));
+    }
+
+    public void testDecrypt_RC4() throws Exception {
+        Cipher cipher = Cipher.getInstance("RC4");
+        cipher.init(Cipher.DECRYPT_MODE, rc4Key);
+        InputStream in = new CipherInputStream(new ByteArrayInputStream(rc4CipherText), cipher);
+        byte[] bytes = readAll(in);
+        assertEquals(Arrays.toString(plainText.getBytes("UTF-8")), Arrays.toString(bytes));
     }
 
     public void testSkip() throws Exception {
-        Cipher cipher = Cipher.getInstance("DES");
-        cipher.init(Cipher.DECRYPT_MODE, key);
-        InputStream in = new CipherInputStream(new ByteArrayInputStream(cipherText), cipher);
-        assertTrue(in.skip(5) > 0);
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, key, iv);
+        InputStream in = new CipherInputStream(new ByteArrayInputStream(aesCipherText), cipher);
+        assertTrue(in.skip(5) >= 0);
     }
 
     private byte[] readAll(InputStream in) throws IOException {
@@ -75,10 +174,33 @@ public final class CipherInputStreamTest extends TestCase {
 
     public void testCipherInputStream_TruncatedInput_Failure() throws Exception {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(new byte[16], "AES"),
-                new IvParameterSpec(new byte[16]));
+        cipher.init(Cipher.DECRYPT_MODE, key, iv);
         InputStream is = new CipherInputStream(new ByteArrayInputStream(new byte[31]), cipher);
         is.read(new byte[4]);
         is.close();
+    }
+
+    public void testCipherInputStream_NullInputStream_Failure() throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, key, iv);
+        InputStream is = new CipherInputStream(null, cipher);
+        try {
+            is.read();
+            fail("Expected NullPointerException");
+        } catch (NullPointerException expected) {
+        }
+
+        byte[] buffer = new byte[128];
+        try {
+            is.read(buffer);
+            fail("Expected NullPointerException");
+        } catch (NullPointerException expected) {
+        }
+
+        try {
+            is.read(buffer, 0, buffer.length);
+            fail("Expected NullPointerException");
+        } catch (NullPointerException expected) {
+        }
     }
 }

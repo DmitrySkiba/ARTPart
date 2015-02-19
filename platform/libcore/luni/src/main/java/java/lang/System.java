@@ -32,6 +32,9 @@
 
 package java.lang;
 
+import android.system.ErrnoException;
+import android.system.StructPasswd;
+import android.system.StructUtsname;
 import dalvik.system.VMRuntime;
 import dalvik.system.VMStack;
 import java.io.BufferedInputStream;
@@ -39,8 +42,8 @@ import java.io.Console;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.channels.Channel;
 import java.nio.channels.spi.SelectorProvider;
@@ -51,11 +54,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import libcore.icu.ICU;
-import libcore.io.ErrnoException;
 import libcore.io.Libcore;
-import libcore.io.StructPasswd;
-import libcore.io.StructUtsname;
-import libcore.util.ZoneInfoDB;
 
 /**
  * Provides access to system-related information and resources including
@@ -83,12 +82,31 @@ public final class System {
     public static final PrintStream err;
 
     private static final String lineSeparator;
+    private static final Properties unchangeableSystemProperties;
     private static Properties systemProperties;
+
+    /**
+     * Dedicated lock for GC / Finalization logic.
+     */
+    private static final Object lock = new Object();
+
+    /**
+     * Whether or not we need to do a GC before running the finalizers.
+     */
+    private static boolean runGC;
+
+    /**
+     * If we just ran finalization, we might want to do a GC to free the finalized objects.
+     * This lets us do gc/runFinlization/gc sequences but prevents back to back System.gc().
+     */
+    private static boolean justRanFinalization;
 
     static {
         err = new PrintStream(new FileOutputStream(FileDescriptor.err));
         out = new PrintStream(new FileOutputStream(FileDescriptor.out));
         in = new BufferedInputStream(new FileInputStream(FileDescriptor.in));
+        unchangeableSystemProperties = initUnchangeableSystemProperties();
+        systemProperties = createSystemProperties();
         lineSeparator = System.getProperty("line.separator");
     }
 
@@ -153,7 +171,433 @@ public final class System {
      * @param length
      *            the number of elements to be copied.
      */
-    public static native void arraycopy(Object src, int srcPos, Object dst, int dstPos, int length);
+
+    public static native void arraycopy(Object src, int srcPos,
+        Object dst, int dstPos, int length);
+
+    /**
+     * The char array length threshold below which to use a Java
+     * (non-native) version of arraycopy() instead of the native
+     * version. See b/7103825.
+     */
+    private static final int ARRAYCOPY_SHORT_CHAR_ARRAY_THRESHOLD = 32;
+
+    /**
+     * The char[] specialized version of arraycopy().
+     *
+     * @hide internal use only
+     */
+    public static void arraycopy(char[] src, int srcPos, char[] dst, int dstPos, int length) {
+        if (src == null) {
+            throw new NullPointerException("src == null");
+        }
+        if (dst == null) {
+            throw new NullPointerException("dst == null");
+        }
+        if (srcPos < 0 || dstPos < 0 || length < 0 ||
+            srcPos > src.length - length || dstPos > dst.length - length) {
+            throw new ArrayIndexOutOfBoundsException(
+                "src.length=" + src.length + " srcPos=" + srcPos +
+                " dst.length=" + dst.length + " dstPos=" + dstPos + " length=" + length);
+        }
+        if (length <= ARRAYCOPY_SHORT_CHAR_ARRAY_THRESHOLD) {
+            // Copy char by char for shorter arrays.
+            if (src == dst && srcPos < dstPos && dstPos < srcPos + length) {
+                // Copy backward (to avoid overwriting elements before
+                // they are copied in case of an overlap on the same
+                // array.)
+                for (int i = length - 1; i >= 0; --i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            } else {
+                // Copy forward.
+                for (int i = 0; i < length; ++i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            }
+        } else {
+            // Call the native version for longer arrays.
+            arraycopyCharUnchecked(src, srcPos, dst, dstPos, length);
+        }
+    }
+
+    /**
+     * The char[] specialized, unchecked, native version of
+     * arraycopy(). This assumes error checking has been done.
+     */
+    private static native void arraycopyCharUnchecked(char[] src, int srcPos,
+        char[] dst, int dstPos, int length);
+
+    /**
+     * The byte array length threshold below which to use a Java
+     * (non-native) version of arraycopy() instead of the native
+     * version. See b/7103825.
+     */
+    private static final int ARRAYCOPY_SHORT_BYTE_ARRAY_THRESHOLD = 32;
+
+    /**
+     * The byte[] specialized version of arraycopy().
+     *
+     * @hide internal use only
+     */
+    public static void arraycopy(byte[] src, int srcPos, byte[] dst, int dstPos, int length) {
+        if (src == null) {
+            throw new NullPointerException("src == null");
+        }
+        if (dst == null) {
+            throw new NullPointerException("dst == null");
+        }
+        if (srcPos < 0 || dstPos < 0 || length < 0 ||
+            srcPos > src.length - length || dstPos > dst.length - length) {
+            throw new ArrayIndexOutOfBoundsException(
+                "src.length=" + src.length + " srcPos=" + srcPos +
+                " dst.length=" + dst.length + " dstPos=" + dstPos + " length=" + length);
+        }
+        if (length <= ARRAYCOPY_SHORT_BYTE_ARRAY_THRESHOLD) {
+            // Copy byte by byte for shorter arrays.
+            if (src == dst && srcPos < dstPos && dstPos < srcPos + length) {
+                // Copy backward (to avoid overwriting elements before
+                // they are copied in case of an overlap on the same
+                // array.)
+                for (int i = length - 1; i >= 0; --i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            } else {
+                // Copy forward.
+                for (int i = 0; i < length; ++i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            }
+        } else {
+            // Call the native version for longer arrays.
+            arraycopyByteUnchecked(src, srcPos, dst, dstPos, length);
+        }
+    }
+
+    /**
+     * The byte[] specialized, unchecked, native version of
+     * arraycopy(). This assumes error checking has been done.
+     */
+    private static native void arraycopyByteUnchecked(byte[] src, int srcPos,
+        byte[] dst, int dstPos, int length);
+
+    /**
+     * The short array length threshold below which to use a Java
+     * (non-native) version of arraycopy() instead of the native
+     * version. See b/7103825.
+     */
+    private static final int ARRAYCOPY_SHORT_SHORT_ARRAY_THRESHOLD = 32;
+
+    /**
+     * The short[] specialized version of arraycopy().
+     *
+     * @hide internal use only
+     */
+    public static void arraycopy(short[] src, int srcPos, short[] dst, int dstPos, int length) {
+        if (src == null) {
+            throw new NullPointerException("src == null");
+        }
+        if (dst == null) {
+            throw new NullPointerException("dst == null");
+        }
+        if (srcPos < 0 || dstPos < 0 || length < 0 ||
+            srcPos > src.length - length || dstPos > dst.length - length) {
+            throw new ArrayIndexOutOfBoundsException(
+                "src.length=" + src.length + " srcPos=" + srcPos +
+                " dst.length=" + dst.length + " dstPos=" + dstPos + " length=" + length);
+        }
+        if (length <= ARRAYCOPY_SHORT_SHORT_ARRAY_THRESHOLD) {
+            // Copy short by short for shorter arrays.
+            if (src == dst && srcPos < dstPos && dstPos < srcPos + length) {
+                // Copy backward (to avoid overwriting elements before
+                // they are copied in case of an overlap on the same
+                // array.)
+                for (int i = length - 1; i >= 0; --i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            } else {
+                // Copy forward.
+                for (int i = 0; i < length; ++i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            }
+        } else {
+            // Call the native version for longer arrays.
+            arraycopyShortUnchecked(src, srcPos, dst, dstPos, length);
+        }
+    }
+
+    /**
+     * The short[] specialized, unchecked, native version of
+     * arraycopy(). This assumes error checking has been done.
+     */
+    private static native void arraycopyShortUnchecked(short[] src, int srcPos,
+        short[] dst, int dstPos, int length);
+
+    /**
+     * The short array length threshold below which to use a Java
+     * (non-native) version of arraycopy() instead of the native
+     * version. See b/7103825.
+     */
+    private static final int ARRAYCOPY_SHORT_INT_ARRAY_THRESHOLD = 32;
+
+    /**
+     * The int[] specialized version of arraycopy().
+     *
+     * @hide internal use only
+     */
+    public static void arraycopy(int[] src, int srcPos, int[] dst, int dstPos, int length) {
+        if (src == null) {
+            throw new NullPointerException("src == null");
+        }
+        if (dst == null) {
+            throw new NullPointerException("dst == null");
+        }
+        if (srcPos < 0 || dstPos < 0 || length < 0 ||
+            srcPos > src.length - length || dstPos > dst.length - length) {
+            throw new ArrayIndexOutOfBoundsException(
+                "src.length=" + src.length + " srcPos=" + srcPos +
+                " dst.length=" + dst.length + " dstPos=" + dstPos + " length=" + length);
+        }
+        if (length <= ARRAYCOPY_SHORT_INT_ARRAY_THRESHOLD) {
+            // Copy int by int for shorter arrays.
+            if (src == dst && srcPos < dstPos && dstPos < srcPos + length) {
+                // Copy backward (to avoid overwriting elements before
+                // they are copied in case of an overlap on the same
+                // array.)
+                for (int i = length - 1; i >= 0; --i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            } else {
+                // Copy forward.
+                for (int i = 0; i < length; ++i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            }
+        } else {
+            // Call the native version for longer arrays.
+            arraycopyIntUnchecked(src, srcPos, dst, dstPos, length);
+        }
+    }
+
+    /**
+     * The int[] specialized, unchecked, native version of
+     * arraycopy(). This assumes error checking has been done.
+     */
+    private static native void arraycopyIntUnchecked(int[] src, int srcPos,
+        int[] dst, int dstPos, int length);
+
+    /**
+     * The short array length threshold below which to use a Java
+     * (non-native) version of arraycopy() instead of the native
+     * version. See b/7103825.
+     */
+    private static final int ARRAYCOPY_SHORT_LONG_ARRAY_THRESHOLD = 32;
+
+    /**
+     * The long[] specialized version of arraycopy().
+     *
+     * @hide internal use only
+     */
+    public static void arraycopy(long[] src, int srcPos, long[] dst, int dstPos, int length) {
+        if (src == null) {
+            throw new NullPointerException("src == null");
+        }
+        if (dst == null) {
+            throw new NullPointerException("dst == null");
+        }
+        if (srcPos < 0 || dstPos < 0 || length < 0 ||
+            srcPos > src.length - length || dstPos > dst.length - length) {
+            throw new ArrayIndexOutOfBoundsException(
+                "src.length=" + src.length + " srcPos=" + srcPos +
+                " dst.length=" + dst.length + " dstPos=" + dstPos + " length=" + length);
+        }
+        if (length <= ARRAYCOPY_SHORT_LONG_ARRAY_THRESHOLD) {
+            // Copy long by long for shorter arrays.
+            if (src == dst && srcPos < dstPos && dstPos < srcPos + length) {
+                // Copy backward (to avoid overwriting elements before
+                // they are copied in case of an overlap on the same
+                // array.)
+                for (int i = length - 1; i >= 0; --i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            } else {
+                // Copy forward.
+                for (int i = 0; i < length; ++i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            }
+        } else {
+            // Call the native version for longer arrays.
+            arraycopyLongUnchecked(src, srcPos, dst, dstPos, length);
+        }
+    }
+
+    /**
+     * The long[] specialized, unchecked, native version of
+     * arraycopy(). This assumes error checking has been done.
+     */
+    private static native void arraycopyLongUnchecked(long[] src, int srcPos,
+        long[] dst, int dstPos, int length);
+
+    /**
+     * The short array length threshold below which to use a Java
+     * (non-native) version of arraycopy() instead of the native
+     * version. See b/7103825.
+     */
+    private static final int ARRAYCOPY_SHORT_FLOAT_ARRAY_THRESHOLD = 32;
+
+    /**
+     * The float[] specialized version of arraycopy().
+     *
+     * @hide internal use only
+     */
+    public static void arraycopy(float[] src, int srcPos, float[] dst, int dstPos, int length) {
+        if (src == null) {
+            throw new NullPointerException("src == null");
+        }
+        if (dst == null) {
+            throw new NullPointerException("dst == null");
+        }
+        if (srcPos < 0 || dstPos < 0 || length < 0 ||
+            srcPos > src.length - length || dstPos > dst.length - length) {
+            throw new ArrayIndexOutOfBoundsException(
+                "src.length=" + src.length + " srcPos=" + srcPos +
+                " dst.length=" + dst.length + " dstPos=" + dstPos + " length=" + length);
+        }
+        if (length <= ARRAYCOPY_SHORT_FLOAT_ARRAY_THRESHOLD) {
+            // Copy float by float for shorter arrays.
+            if (src == dst && srcPos < dstPos && dstPos < srcPos + length) {
+                // Copy backward (to avoid overwriting elements before
+                // they are copied in case of an overlap on the same
+                // array.)
+                for (int i = length - 1; i >= 0; --i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            } else {
+                // Copy forward.
+                for (int i = 0; i < length; ++i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            }
+        } else {
+            // Call the native version for floater arrays.
+            arraycopyFloatUnchecked(src, srcPos, dst, dstPos, length);
+        }
+    }
+
+    /**
+     * The float[] specialized, unchecked, native version of
+     * arraycopy(). This assumes error checking has been done.
+     */
+    private static native void arraycopyFloatUnchecked(float[] src, int srcPos,
+        float[] dst, int dstPos, int length);
+
+    /**
+     * The short array length threshold below which to use a Java
+     * (non-native) version of arraycopy() instead of the native
+     * version. See b/7103825.
+     */
+    private static final int ARRAYCOPY_SHORT_DOUBLE_ARRAY_THRESHOLD = 32;
+
+    /**
+     * The double[] specialized version of arraycopy().
+     *
+     * @hide internal use only
+     */
+    public static void arraycopy(double[] src, int srcPos, double[] dst, int dstPos, int length) {
+        if (src == null) {
+            throw new NullPointerException("src == null");
+        }
+        if (dst == null) {
+            throw new NullPointerException("dst == null");
+        }
+        if (srcPos < 0 || dstPos < 0 || length < 0 ||
+            srcPos > src.length - length || dstPos > dst.length - length) {
+            throw new ArrayIndexOutOfBoundsException(
+                "src.length=" + src.length + " srcPos=" + srcPos +
+                " dst.length=" + dst.length + " dstPos=" + dstPos + " length=" + length);
+        }
+        if (length <= ARRAYCOPY_SHORT_DOUBLE_ARRAY_THRESHOLD) {
+            // Copy double by double for shorter arrays.
+            if (src == dst && srcPos < dstPos && dstPos < srcPos + length) {
+                // Copy backward (to avoid overwriting elements before
+                // they are copied in case of an overlap on the same
+                // array.)
+                for (int i = length - 1; i >= 0; --i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            } else {
+                // Copy forward.
+                for (int i = 0; i < length; ++i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            }
+        } else {
+            // Call the native version for floater arrays.
+            arraycopyDoubleUnchecked(src, srcPos, dst, dstPos, length);
+        }
+    }
+
+    /**
+     * The double[] specialized, unchecked, native version of
+     * arraycopy(). This assumes error checking has been done.
+     */
+    private static native void arraycopyDoubleUnchecked(double[] src, int srcPos,
+        double[] dst, int dstPos, int length);
+
+    /**
+     * The short array length threshold below which to use a Java
+     * (non-native) version of arraycopy() instead of the native
+     * version. See b/7103825.
+     */
+    private static final int ARRAYCOPY_SHORT_BOOLEAN_ARRAY_THRESHOLD = 32;
+
+    /**
+     * The boolean[] specialized version of arraycopy().
+     *
+     * @hide internal use only
+     */
+    public static void arraycopy(boolean[] src, int srcPos, boolean[] dst, int dstPos, int length) {
+        if (src == null) {
+            throw new NullPointerException("src == null");
+        }
+        if (dst == null) {
+            throw new NullPointerException("dst == null");
+        }
+        if (srcPos < 0 || dstPos < 0 || length < 0 ||
+            srcPos > src.length - length || dstPos > dst.length - length) {
+            throw new ArrayIndexOutOfBoundsException(
+                "src.length=" + src.length + " srcPos=" + srcPos +
+                " dst.length=" + dst.length + " dstPos=" + dstPos + " length=" + length);
+        }
+        if (length <= ARRAYCOPY_SHORT_BOOLEAN_ARRAY_THRESHOLD) {
+            // Copy boolean by boolean for shorter arrays.
+            if (src == dst && srcPos < dstPos && dstPos < srcPos + length) {
+                // Copy backward (to avoid overwriting elements before
+                // they are copied in case of an overlap on the same
+                // array.)
+                for (int i = length - 1; i >= 0; --i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            } else {
+                // Copy forward.
+                for (int i = 0; i < length; ++i) {
+                    dst[dstPos + i] = src[srcPos + i];
+                }
+            }
+        } else {
+            // Call the native version for floater arrays.
+            arraycopyBooleanUnchecked(src, srcPos, dst, dstPos, length);
+        }
+    }
+
+    /**
+     * The boolean[] specialized, unchecked, native version of
+     * arraycopy(). This assumes error checking has been done.
+     */
+    private static native void arraycopyBooleanUnchecked(boolean[] src, int srcPos,
+        boolean[] dst, int dstPos, int length);
 
     /**
      * Returns the current time in milliseconds since January 1, 1970 00:00:00.0 UTC.
@@ -196,7 +640,18 @@ public final class System {
      * that the garbage collector will actually be run.
      */
     public static void gc() {
-        Runtime.getRuntime().gc();
+        boolean shouldRunGC;
+        synchronized(lock) {
+            shouldRunGC = justRanFinalization;
+            if (shouldRunGC) {
+                justRanFinalization = false;
+            } else {
+                runGC = true;
+            }
+        }
+        if (shouldRunGC) {
+            Runtime.getRuntime().gc();
+        }
     }
 
     /**
@@ -246,13 +701,10 @@ public final class System {
      * @return the system properties.
      */
     public static Properties getProperties() {
-        if (systemProperties == null) {
-            initSystemProperties();
-        }
         return systemProperties;
     }
 
-    private static void initSystemProperties() {
+    private static Properties initUnchangeableSystemProperties() {
         VMRuntime runtime = VMRuntime.getRuntime();
         Properties p = new Properties();
 
@@ -276,15 +728,6 @@ public final class System {
             javaHome = "/system";
         }
         p.put("java.home", javaHome);
-
-        // On Android, each app gets its own temporary directory. This is just a fallback
-        // default, useful only on the host.
-        p.put("java.io.tmpdir", "/tmp");
-
-        String ldLibraryPath = getenv("LD_LIBRARY_PATH");
-        if (ldLibraryPath != null) {
-            p.put("java.library.path", ldLibraryPath);
-        }
 
         p.put("java.specification.name", "Dalvik Core Library");
         p.put("java.specification.vendor", projectName);
@@ -313,7 +756,6 @@ public final class System {
 
         try {
             StructPasswd passwd = Libcore.os.getpwuid(Libcore.os.getuid());
-            p.put("user.home", passwd.pw_dir);
             p.put("user.name", passwd.pw_name);
         } catch (ErrnoException exception) {
             throw new AssertionError(exception);
@@ -333,8 +775,36 @@ public final class System {
 
         // Override built-in properties with settings from the command line.
         parsePropertyAssignments(p, runtime.properties());
+        return p;
+    }
 
-        systemProperties = p;
+    /**
+     * Inits an unchangeable system property with the given value.
+     * This is useful when the environment needs to change under native bridge emulation.
+     */
+    private static void initUnchangeableSystemProperty(String name, String value) {
+        checkPropertyName(name);
+        unchangeableSystemProperties.put(name, value);
+    }
+
+    private static void setDefaultChangeableProperties(Properties p) {
+        // On Android, each app gets its own temporary directory.
+        // (See android.app.ActivityThread.) This is just a fallback default,
+        // useful only on the host.
+        p.put("java.io.tmpdir", "/tmp");
+
+        // Android has always had an empty "user.home" (see docs for getProperty).
+        // This is not useful for normal android apps which need to use android specific
+        // APIs such as {@code Context.getFilesDir} and {@code Context.getCacheDir} but
+        // we make it changeable for backward compatibility, so that they can change it
+        // to a writeable location if required.
+        p.put("user.home", "");
+    }
+
+    private static Properties createSystemProperties() {
+        Properties p = new PropertiesWithNonOverrideableDefaults(unchangeableSystemProperties);
+        setDefaultChangeableProperties(p);
+        return p;
     }
 
     /**
@@ -360,7 +830,8 @@ public final class System {
      * Returns the value of a particular system property or {@code null} if no
      * such property exists.
      *
-     * <p>The following properties are always provided by the Dalvik VM:
+     * <p>The following properties are always provided by the Dalvik VM <b>and
+     * cannot be modified</b>:
      * <p><table BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
      * <tr BGCOLOR="#CCCCFF" CLASS="TableHeadingColor">
      *     <td><b>Name</b></td>        <td><b>Meaning</b></td>                    <td><b>Example</b></td></tr>
@@ -401,7 +872,8 @@ public final class System {
      *
      * </table>
      *
-     * <p>It is a mistake to try to override any of these. Doing so will have unpredictable results.
+     * <p>It is an error to override anyone of these properties. Any attempt to
+     * do so will leave their values unchanged.
      *
      * @param propertyName
      *            the name of the system property to look up.
@@ -418,22 +890,26 @@ public final class System {
      */
     public static String getProperty(String name, String defaultValue) {
         checkPropertyName(name);
-        return getProperties().getProperty(name, defaultValue);
+        return systemProperties.getProperty(name, defaultValue);
     }
 
     /**
-     * Sets the value of a particular system property.
+     * Sets the value of a particular system property. Most system properties
+     * are read only and cannot be cleared or modified. See {@link #setProperty} for a
+     * list of such properties.
      *
      * @return the old value of the property or {@code null} if the property
      *         didn't exist.
      */
     public static String setProperty(String name, String value) {
         checkPropertyName(name);
-        return (String) getProperties().setProperty(name, value);
+        return (String) systemProperties.setProperty(name, value);
     }
 
     /**
-     * Removes a specific system property.
+     * Removes a specific system property. Most system properties
+     * are read only and cannot be cleared or modified. See {@link #setProperty} for a
+     * list of such properties.
      *
      * @return the property value or {@code null} if the property didn't exist.
      * @throws NullPointerException
@@ -443,7 +919,7 @@ public final class System {
      */
     public static String clearProperty(String name) {
         checkPropertyName(name);
-        return (String) getProperties().remove(name);
+        return (String) systemProperties.remove(name);
     }
 
     private static void checkPropertyName(String name) {
@@ -500,37 +976,17 @@ public final class System {
     }
 
     /**
-     * Loads and links the dynamic library that is identified through the
-     * specified path. This method is similar to {@link #loadLibrary(String)},
-     * but it accepts a full path specification whereas {@code loadLibrary} just
-     * accepts the name of the library to load.
-     *
-     * @param pathName
-     *            the path of the file to be loaded.
+     * See {@link Runtime#load}.
      */
     public static void load(String pathName) {
         Runtime.getRuntime().load(pathName, VMStack.getCallingClassLoader());
     }
 
     /**
-     * Loads and links the library with the specified name. The mapping of the
-     * specified library name to the full path for loading the library is
-     * implementation-dependent.
-     *
-     * @param libName
-     *            the name of the library to load.
-     * @throws UnsatisfiedLinkError
-     *             if the library could not be loaded.
+     * See {@link Runtime#loadLibrary}.
      */
     public static void loadLibrary(String libName) {
         Runtime.getRuntime().loadLibrary(libName, VMStack.getCallingClassLoader());
-    }
-
-    /**
-     * @hide internal use only
-     */
-    public static void initStaticLibrary(String libName) {
-        Runtime.getRuntime().initStaticLibrary(libName, VMStack.getCallingClassLoader());
     }
 
     /**
@@ -582,7 +1038,18 @@ public final class System {
      * to perform any outstanding object finalization.
      */
     public static void runFinalization() {
+        boolean shouldRunGC;
+        synchronized(lock) {
+            shouldRunGC = runGC;
+            runGC = false;
+        }
+        if (shouldRunGC) {
+            Runtime.getRuntime().gc();
+        }
         Runtime.getRuntime().runFinalization();
+        synchronized(lock) {
+            justRanFinalization = true;
+        }
     }
 
     /**
@@ -601,12 +1068,21 @@ public final class System {
     }
 
     /**
-     * Sets all system properties. This does not take a copy; the passed-in object is used
-     * directly. Passing null causes the VM to reinitialize the properties to how they were
-     * when the VM was started.
+     * Attempts to set all system properties. Copies all properties from
+     * {@code p} and discards system properties that are read only and cannot
+     * be modified. See {@link #setProperty} for a list of such properties.
      */
     public static void setProperties(Properties p) {
-        systemProperties = p;
+        PropertiesWithNonOverrideableDefaults userProperties =
+                new PropertiesWithNonOverrideableDefaults(unchangeableSystemProperties);
+        if (p != null) {
+            userProperties.putAll(p);
+        } else {
+            // setProperties(null) is documented to restore defaults.
+            setDefaultChangeableProperties(userProperties);
+        }
+
+        systemProperties = userProperties;
     }
 
     /**
@@ -628,25 +1104,46 @@ public final class System {
 
     /**
      * Returns the platform specific file name format for the shared library
-     * named by the argument.
-     *
-     * @param userLibName
-     *            the name of the library to look up.
-     * @return the platform specific filename for the library.
+     * named by the argument. On Android, this would turn {@code "MyLibrary"} into
+     * {@code "libMyLibrary.so"}.
      */
-    public static native String mapLibraryName(String userLibName);
+    public static native String mapLibraryName(String nickname);
 
     /**
-     * Sets the value of the named static field in the receiver to the passed in
-     * argument.
-     *
-     * @param fieldName
-     *            the name of the field to set, one of in, out, or err
-     * @param stream
-     *            the new value of the field
+     * Used to set System.err, System.in, and System.out.
      */
-    private static native void setFieldImpl(String fieldName, String signature, Object stream);
+    private static native void setFieldImpl(String field, String signature, Object stream);
 
+    /**
+     * A properties class that prohibits changes to any of the properties
+     * contained in its defaults.
+     */
+    static final class PropertiesWithNonOverrideableDefaults extends Properties {
+        PropertiesWithNonOverrideableDefaults(Properties defaults) {
+            super(defaults);
+        }
+
+        @Override
+        public Object put(Object key, Object value) {
+            if (defaults.containsKey(key)) {
+                logE("Ignoring attempt to set property \"" + key +
+                        "\" to value \"" + value + "\".");
+                return defaults.get(key);
+            }
+
+            return super.put(key, value);
+        }
+
+        @Override
+        public Object remove(Object key) {
+            if (defaults.containsKey(key)) {
+                logE("Ignoring attempt to remove property \"" + key + "\".");
+                return null;
+            }
+
+            return super.remove(key);
+        }
+    }
 
     /**
      * The unmodifiable environment variables map. System.getenv() specifies

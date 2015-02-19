@@ -16,9 +16,9 @@
 
 package libcore.java.net;
 
+import junit.framework.TestCase;
 import java.net.URI;
 import java.net.URISyntaxException;
-import junit.framework.TestCase;
 import libcore.util.SerializationTester;
 
 public final class URITest extends TestCase {
@@ -55,6 +55,24 @@ public final class URITest extends TestCase {
                 .equals(new URI("http://localhost/foo?BAR=BAZ#quux")));
         assertFalse(new URI("http://localhost/foo?bar=baz#quux")
                 .equals(new URI("http://localhost/foo?bar=baz#QUUX")));
+    }
+
+    public void testEqualsEscaping() throws Exception {
+        // Case insensitive when comparing escaped values, but not when
+        // comparing unescaped values.
+        assertEquals(new URI("http://localhost/foo?bar=fooobar%E0%AE%A8%E0bar"),
+                new URI("http://localhost/foo?bar=fooobar%E0%AE%a8%e0bar"));
+        assertFalse(new URI("http://localhost/foo?bar=fooobar%E0%AE%A8%E0bar").equals(
+                new URI("http://localhost/foo?bar=FoooBar%E0%AE%a8%e0bar")));
+        assertFalse(new URI("http://localhost/foo?bar=fooobar%E0%AE%A8%E0bar").equals(
+                new URI("http://localhost/foo?bar=fooobar%E0%AE%a8%e0BaR")));
+
+        // Last byte replaced by an unescaped value.
+        assertFalse(new URI("http://localhost/foo?bar=%E0%AE%A8%E0").equals(
+                new URI("http://localhost/foo?bar=%E0%AE%a8xxx")));
+        // Missing byte.
+        assertFalse(new URI("http://localhost/foo?bar=%E0%AE%A8%E0").equals(
+                new URI("http://localhost/foo?bar=%E0%AE%a8")));
     }
 
     public void testFileEqualsWithEmptyHost() throws Exception {
@@ -511,9 +529,33 @@ public final class URITest extends TestCase {
         assertEquals("b/c", a.relativize(b).toString()); // RI assumes a directory
     }
 
-    public void testParseServerAuthorityInvalidAuthority() throws Exception {
+    public void testParseServerAuthorityInvalidPortMinus() throws Exception {
         URI uri = new URI("http://host:-2/");
         assertEquals("host:-2", uri.getAuthority());
+        assertNull(uri.getHost());
+        assertEquals(-1, uri.getPort());
+        try {
+            uri.parseServerAuthority();
+            fail();
+        } catch (URISyntaxException expected) {
+        }
+    }
+
+    public void testParseServerAuthorityInvalidPortPlus() throws Exception {
+        URI uri = new URI("http://host:+2/");
+        assertEquals("host:+2", uri.getAuthority());
+        assertNull(uri.getHost());
+        assertEquals(-1, uri.getPort());
+        try {
+            uri.parseServerAuthority();
+            fail();
+        } catch (URISyntaxException expected) {
+        }
+    }
+
+    public void testParseServerAuthorityInvalidPortNonASCII() throws Exception {
+        URI uri = new URI("http://host:١٢٣/"); // 123 in arabic
+        assertEquals("host:١٢٣", uri.getAuthority());
         assertNull(uri.getHost());
         assertEquals(-1, uri.getPort());
         try {

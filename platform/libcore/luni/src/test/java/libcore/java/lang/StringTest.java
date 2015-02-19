@@ -174,7 +174,7 @@ public class StringTest extends TestCase {
 
     /**
      * Tests a widely assumed performance characteristic of String.substring():
-     * that it reuses the original's backing array. Although behaviour should be
+     * that it reuses the original's backing array. Although behavior should be
      * correct even if this test fails, many applications may suffer
      * significant performance degradation.
      */
@@ -187,7 +187,7 @@ public class StringTest extends TestCase {
     /**
      * Tests a widely assumed performance characteristic of string's copy
      * constructor: that it ensures the backing array is the same length as the
-     * string. Although behaviour should be correct even if this test fails,
+     * string. Although behavior should be correct even if this test fails,
      * many applications may suffer significant performance degradation.
      */
     public void testStringCopiesAvoidHeapRetention() throws IllegalAccessException {
@@ -243,33 +243,43 @@ public class StringTest extends TestCase {
     };
 
     public void testCaseMapping_tr_TR() {
-        Locale trTR = new Locale("tr", "TR");
-        assertEquals(LATIN_SMALL_I, LATIN_SMALL_I.toLowerCase(trTR));
-        assertEquals(LATIN_SMALL_I, LATIN_CAPITAL_I_WITH_DOT_ABOVE.toLowerCase(trTR));
-        assertEquals(LATIN_SMALL_DOTLESS_I, LATIN_SMALL_DOTLESS_I.toLowerCase(trTR));
+        Locale tr_TR = new Locale("tr", "TR");
+        assertEquals(LATIN_SMALL_I, LATIN_SMALL_I.toLowerCase(tr_TR));
+        assertEquals(LATIN_SMALL_I, LATIN_CAPITAL_I_WITH_DOT_ABOVE.toLowerCase(tr_TR));
+        assertEquals(LATIN_SMALL_DOTLESS_I, LATIN_SMALL_DOTLESS_I.toLowerCase(tr_TR));
 
-        assertEquals(LATIN_CAPITAL_I, LATIN_CAPITAL_I.toUpperCase(trTR));
-        assertEquals(LATIN_CAPITAL_I_WITH_DOT_ABOVE, LATIN_CAPITAL_I_WITH_DOT_ABOVE.toUpperCase(trTR));
-        assertEquals(LATIN_CAPITAL_I_WITH_DOT_ABOVE, LATIN_SMALL_I.toUpperCase(trTR));
+        assertEquals(LATIN_CAPITAL_I, LATIN_CAPITAL_I.toUpperCase(tr_TR));
+        assertEquals(LATIN_CAPITAL_I_WITH_DOT_ABOVE, LATIN_CAPITAL_I_WITH_DOT_ABOVE.toUpperCase(tr_TR));
+        assertEquals(LATIN_CAPITAL_I_WITH_DOT_ABOVE, LATIN_SMALL_I.toUpperCase(tr_TR));
 
-        assertEquals(LATIN_CAPITAL_I, LATIN_SMALL_DOTLESS_I.toUpperCase(trTR));
-        assertEquals(LATIN_SMALL_DOTLESS_I, LATIN_CAPITAL_I.toLowerCase(trTR));
+        assertEquals(LATIN_CAPITAL_I, LATIN_SMALL_DOTLESS_I.toUpperCase(tr_TR));
+        assertEquals(LATIN_SMALL_DOTLESS_I, LATIN_CAPITAL_I.toLowerCase(tr_TR));
     }
 
     public void testCaseMapping_en_US() {
-        Locale enUs = new Locale("en", "US");
-        assertEquals(LATIN_CAPITAL_I, LATIN_SMALL_I.toUpperCase(enUs));
-        assertEquals(LATIN_CAPITAL_I, LATIN_CAPITAL_I.toUpperCase(enUs));
-        assertEquals(LATIN_CAPITAL_I_WITH_DOT_ABOVE, LATIN_CAPITAL_I_WITH_DOT_ABOVE.toUpperCase(enUs));
+        Locale en_US = new Locale("en", "US");
+        assertEquals(LATIN_CAPITAL_I, LATIN_SMALL_I.toUpperCase(en_US));
+        assertEquals(LATIN_CAPITAL_I, LATIN_CAPITAL_I.toUpperCase(en_US));
+        assertEquals(LATIN_CAPITAL_I_WITH_DOT_ABOVE, LATIN_CAPITAL_I_WITH_DOT_ABOVE.toUpperCase(en_US));
 
-        assertEquals(LATIN_SMALL_I, LATIN_SMALL_I.toLowerCase(enUs));
-        assertEquals(LATIN_SMALL_I, LATIN_CAPITAL_I.toLowerCase(enUs));
-        assertEquals(LATIN_SMALL_DOTLESS_I, LATIN_SMALL_DOTLESS_I.toLowerCase(enUs));
+        assertEquals(LATIN_SMALL_I, LATIN_SMALL_I.toLowerCase(en_US));
+        assertEquals(LATIN_SMALL_I, LATIN_CAPITAL_I.toLowerCase(en_US));
+        assertEquals(LATIN_SMALL_DOTLESS_I, LATIN_SMALL_DOTLESS_I.toLowerCase(en_US));
 
-        assertEquals(LATIN_CAPITAL_I, LATIN_SMALL_DOTLESS_I.toUpperCase(enUs));
+        assertEquals(LATIN_CAPITAL_I, LATIN_SMALL_DOTLESS_I.toUpperCase(en_US));
         // http://b/3325799: the RI fails this because it's using an obsolete version of the Unicode rules.
         // Android correctly preserves canonical equivalence. (See the separate test for tr_TR.)
-        assertEquals(LATIN_SMALL_I + COMBINING_DOT_ABOVE, LATIN_CAPITAL_I_WITH_DOT_ABOVE.toLowerCase(enUs));
+        assertEquals(LATIN_SMALL_I + COMBINING_DOT_ABOVE, LATIN_CAPITAL_I_WITH_DOT_ABOVE.toLowerCase(en_US));
+    }
+
+    public void testCaseMapping_el() {
+        Locale el_GR = new Locale("el", "GR");
+        assertEquals("ΟΔΟΣ ΟΔΟΣ ΣΟ ΣΟ OΣ ΟΣ Σ ΕΞ", "ΟΔΌΣ Οδός Σο ΣΟ oΣ ΟΣ σ ἕξ".toUpperCase(el_GR));
+        assertEquals("ΟΔΟΣ ΟΔΟΣ ΣΟ ΣΟ OΣ ΟΣ Σ ΕΞ", "ΟΔΌΣ Οδός Σο ΣΟ oΣ ΟΣ σ ἕξ".toUpperCase(el_GR));
+        assertEquals("ΟΔΟΣ ΟΔΟΣ ΣΟ ΣΟ OΣ ΟΣ Σ ΕΞ", "ΟΔΌΣ Οδός Σο ΣΟ oΣ ΟΣ σ ἕξ".toUpperCase(el_GR));
+
+        Locale en_US = new Locale("en", "US");
+        assertEquals("ΟΔΌΣ ΟΔΌΣ ΣΟ ΣΟ OΣ ΟΣ Σ ἝΞ", "ΟΔΌΣ Οδός Σο ΣΟ oΣ ΟΣ σ ἕξ".toUpperCase(en_US));
     }
 
     public void testEqualsIgnoreCase_tr_TR() {
@@ -347,5 +357,90 @@ public class StringTest extends TestCase {
         assertEquals("-h-e-l-l-o- -w-o-r-l-d-", "hello world".replace("", "-"));
         assertEquals("-w-o-r-l-d-", "hello world".substring(6).replace("", "-"));
         assertEquals("-*-w-*-o-*-r-*-l-*-d-*-", "hello world".substring(6).replace("", "-*-"));
+    }
+
+    public void test_String_getBytes() throws Exception {
+        // http://b/11571917
+        assertEquals("[-126, -96]", Arrays.toString("あ".getBytes("Shift_JIS")));
+        assertEquals("[-126, -87]", Arrays.toString("か".getBytes("Shift_JIS")));
+        assertEquals("[-105, 67]", Arrays.toString("佑".getBytes("Shift_JIS")));
+        assertEquals("[36]", Arrays.toString("$".getBytes("Shift_JIS")));
+        assertEquals("[-29, -127, -117]", Arrays.toString("か".getBytes("UTF-8")));
+
+        // http://b/11639117
+        assertEquals("[-79, -72, -70, -48]", Arrays.toString("구분".getBytes("EUC-KR")));
+
+
+        // https://code.google.com/p/android/issues/detail?id=63188
+        assertEquals("[-77, -10, -64, -76, -63, -53]", Arrays.toString("出来了".getBytes("gbk")));
+        assertEquals("[-77, -10, -64, -76]", Arrays.toString("出来".getBytes("gbk")));
+        assertEquals("[-77, -10]", Arrays.toString("出".getBytes("gbk")));
+    }
+
+    public void test_compareTo() throws Exception {
+        // For strings where a character differs, the result is
+        // the difference between the characters.
+        assertEquals(-1, "a".compareTo("b"));
+        assertEquals(-2, "a".compareTo("c"));
+        assertEquals(1, "b".compareTo("a"));
+        assertEquals(2, "c".compareTo("a"));
+
+        // For strings where the characters match up to the length of the shorter,
+        // the result is the difference between the strings' lengths.
+        assertEquals(0, "a".compareTo("a"));
+        assertEquals(-1, "a".compareTo("aa"));
+        assertEquals(-1, "a".compareTo("az"));
+        assertEquals(-2, "a".compareTo("aaa"));
+        assertEquals(-2, "a".compareTo("azz"));
+        assertEquals(-3, "a".compareTo("aaaa"));
+        assertEquals(-3, "a".compareTo("azzz"));
+        assertEquals(0, "a".compareTo("a"));
+        assertEquals(1, "aa".compareTo("a"));
+        assertEquals(1, "az".compareTo("a"));
+        assertEquals(2, "aaa".compareTo("a"));
+        assertEquals(2, "azz".compareTo("a"));
+        assertEquals(3, "aaaa".compareTo("a"));
+        assertEquals(3, "azzz".compareTo("a"));
+    }
+
+    public void test_compareToIgnoreCase() throws Exception {
+        // For strings where a character differs, the result is
+        // the difference between the characters.
+        assertEquals(-1, "a".compareToIgnoreCase("b"));
+        assertEquals(-1, "a".compareToIgnoreCase("B"));
+        assertEquals(-2, "a".compareToIgnoreCase("c"));
+        assertEquals(-2, "a".compareToIgnoreCase("C"));
+        assertEquals(1, "b".compareToIgnoreCase("a"));
+        assertEquals(1, "B".compareToIgnoreCase("a"));
+        assertEquals(2, "c".compareToIgnoreCase("a"));
+        assertEquals(2, "C".compareToIgnoreCase("a"));
+
+        // For strings where the characters match up to the length of the shorter,
+        // the result is the difference between the strings' lengths.
+        assertEquals(0, "a".compareToIgnoreCase("a"));
+        assertEquals(0, "a".compareToIgnoreCase("A"));
+        assertEquals(0, "A".compareToIgnoreCase("a"));
+        assertEquals(0, "A".compareToIgnoreCase("A"));
+        assertEquals(-1, "a".compareToIgnoreCase("aa"));
+        assertEquals(-1, "a".compareToIgnoreCase("aA"));
+        assertEquals(-1, "a".compareToIgnoreCase("Aa"));
+        assertEquals(-1, "a".compareToIgnoreCase("az"));
+        assertEquals(-1, "a".compareToIgnoreCase("aZ"));
+        assertEquals(-2, "a".compareToIgnoreCase("aaa"));
+        assertEquals(-2, "a".compareToIgnoreCase("AAA"));
+        assertEquals(-2, "a".compareToIgnoreCase("azz"));
+        assertEquals(-2, "a".compareToIgnoreCase("AZZ"));
+        assertEquals(-3, "a".compareToIgnoreCase("aaaa"));
+        assertEquals(-3, "a".compareToIgnoreCase("AAAA"));
+        assertEquals(-3, "a".compareToIgnoreCase("azzz"));
+        assertEquals(-3, "a".compareToIgnoreCase("AZZZ"));
+        assertEquals(1, "aa".compareToIgnoreCase("a"));
+        assertEquals(1, "aA".compareToIgnoreCase("a"));
+        assertEquals(1, "Aa".compareToIgnoreCase("a"));
+        assertEquals(1, "az".compareToIgnoreCase("a"));
+        assertEquals(2, "aaa".compareToIgnoreCase("a"));
+        assertEquals(2, "azz".compareToIgnoreCase("a"));
+        assertEquals(3, "aaaa".compareToIgnoreCase("a"));
+        assertEquals(3, "azzz".compareToIgnoreCase("a"));
     }
 }

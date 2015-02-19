@@ -16,17 +16,39 @@
 
 package libcore.javax.net.ssl;
 
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
+import java.security.Security;
+import java.security.UnrecoverableKeyException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
+import libcore.io.IoUtils;
 import libcore.java.security.StandardNames;
 import javax.net.ServerSocketFactory;
 import javax.net.SocketFactory;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.KeyManagerFactorySpi;
+import javax.net.ssl.ManagerFactoryParameters;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSessionContext;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.TrustManagerFactorySpi;
+import javax.net.ssl.X509KeyManager;
+import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
 
 public class SSLContextTest extends TestCase {
@@ -57,6 +79,106 @@ public class SSLContextTest extends TestCase {
             assertSame(newContext, SSLContext.getDefault());
         }
         SSLContext.setDefault(defaultContext);
+    }
+
+    public void test_SSLContext_defaultConfiguration() throws Exception {
+        SSLDefaultConfigurationAsserts.assertSSLContext(SSLContext.getDefault());
+
+        for (String protocol : StandardNames.SSL_CONTEXT_PROTOCOLS) {
+            SSLContext sslContext = SSLContext.getInstance(protocol);
+            if (!protocol.equals(StandardNames.SSL_CONTEXT_PROTOCOLS_DEFAULT)) {
+                sslContext.init(null, null, null);
+            }
+            SSLDefaultConfigurationAsserts.assertSSLContext(sslContext);
+        }
+    }
+
+    public void test_SSLContext_pskOnlyConfiguration_defaultProviderOnly() throws Exception {
+        // Test the scenario where only a PSKKeyManager is provided and no TrustManagers are
+        // provided.
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(
+                new KeyManager[] {
+                        PSKKeyManagerProxy.getConscryptPSKKeyManager(new PSKKeyManagerProxy())
+                },
+                new TrustManager[0],
+                null);
+        List<String> expectedCipherSuites =
+                new ArrayList<String>(StandardNames.CIPHER_SUITES_DEFAULT_PSK);
+        expectedCipherSuites.add(StandardNames.CIPHER_SUITE_SECURE_RENEGOTIATION);
+        assertEnabledCipherSuites(expectedCipherSuites, sslContext);
+    }
+
+    public void test_SSLContext_x509AndPskConfiguration_defaultProviderOnly() throws Exception {
+        // Test the scenario where an X509TrustManager and PSKKeyManager are provided.
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(
+                new KeyManager[] {
+                        PSKKeyManagerProxy.getConscryptPSKKeyManager(new PSKKeyManagerProxy())
+                },
+                null, // Use default trust managers, one of which is an X.509 one.
+                null);
+        List<String> expectedCipherSuites =
+                new ArrayList<String>(StandardNames.CIPHER_SUITES_DEFAULT_PSK);
+        expectedCipherSuites.addAll(StandardNames.CIPHER_SUITES_DEFAULT);
+        assertEnabledCipherSuites(expectedCipherSuites, sslContext);
+
+        // Test the scenario where an X509KeyManager and PSKKeyManager are provided.
+        sslContext = SSLContext.getInstance("TLS");
+        // Just an arbitrary X509KeyManager -- it won't be invoked in this test.
+        X509KeyManager x509KeyManager = new RandomPrivateKeyX509ExtendedKeyManager(null);
+        sslContext.init(
+                new KeyManager[] {
+                        x509KeyManager,
+                        PSKKeyManagerProxy.getConscryptPSKKeyManager(new PSKKeyManagerProxy())
+                },
+                new TrustManager[0],
+                null);
+        assertEnabledCipherSuites(expectedCipherSuites, sslContext);
+    }
+
+    public void test_SSLContext_emptyConfiguration_defaultProviderOnly() throws Exception {
+        // Test the scenario where neither X.509 nor PSK KeyManagers or TrustManagers are provided.
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(
+                new KeyManager[0],
+                new TrustManager[0],
+                null);
+        assertEnabledCipherSuites(
+                Arrays.asList(StandardNames.CIPHER_SUITE_SECURE_RENEGOTIATION),
+                sslContext);
+    }
+
+    private static void assertEnabledCipherSuites(
+            List<String> expectedCipherSuites, SSLContext sslContext) throws Exception {
+        assertContentsInOrder(
+                expectedCipherSuites, sslContext.createSSLEngine().getEnabledCipherSuites());
+        assertContentsInOrder(
+                expectedCipherSuites,
+                sslContext.createSSLEngine().getSSLParameters().getCipherSuites());
+        assertContentsInOrder(
+                expectedCipherSuites, sslContext.getSocketFactory().getDefaultCipherSuites());
+        assertContentsInOrder(
+                expectedCipherSuites, sslContext.getServerSocketFactory().getDefaultCipherSuites());
+
+        SSLSocket sslSocket = (SSLSocket) sslContext.getSocketFactory().createSocket();
+        try {
+            assertContentsInOrder(
+                    expectedCipherSuites, sslSocket.getEnabledCipherSuites());
+            assertContentsInOrder(
+                    expectedCipherSuites, sslSocket.getSSLParameters().getCipherSuites());
+        } finally {
+            IoUtils.closeQuietly(sslSocket);
+        }
+
+        SSLServerSocket sslServerSocket =
+                (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket();
+        try {
+            assertContentsInOrder(
+                    expectedCipherSuites, sslServerSocket.getEnabledCipherSuites());
+        } finally {
+            IoUtils.closeQuietly(sslSocket);
+        }
     }
 
     public void test_SSLContext_getInstance() throws Exception {
@@ -109,16 +231,183 @@ public class SSLContextTest extends TestCase {
         assertEquals(StandardNames.JSSE_PROVIDER_NAME, provider.getName());
     }
 
-    public void test_SSLContext_init() throws Exception {
+    public void test_SSLContext_init_Default() throws Exception {
+        // Assert that initializing a default SSLContext fails because it's supposed to be
+        // initialized already.
+        SSLContext sslContext = SSLContext.getInstance(StandardNames.SSL_CONTEXT_PROTOCOLS_DEFAULT);
+        try {
+            sslContext.init(null, null, null);
+            fail();
+        } catch (KeyManagementException expected) {}
+        try {
+            sslContext.init(new KeyManager[0], new TrustManager[0], null);
+            fail();
+        } catch (KeyManagementException expected) {}
+        try {
+            sslContext.init(
+                    new KeyManager[] {new KeyManager() {}},
+                    new TrustManager[] {new TrustManager() {}},
+                    null);
+            fail();
+        } catch (KeyManagementException expected) {}
+    }
+
+    public void test_SSLContext_init_withNullManagerArrays() throws Exception {
+        // Assert that SSLContext.init works fine even when provided with null arrays of
+        // KeyManagers and TrustManagers.
+        // The contract of SSLContext.init is that it will for default X.509 KeyManager and
+        // TrustManager from the highest priority KeyManagerFactory and TrustManagerFactory.
         for (String protocol : StandardNames.SSL_CONTEXT_PROTOCOLS) {
-            SSLContext sslContext = SSLContext.getInstance(protocol);
             if (protocol.equals(StandardNames.SSL_CONTEXT_PROTOCOLS_DEFAULT)) {
-                try {
-                    sslContext.init(null, null, null);
-                } catch (KeyManagementException expected) {
+                // Default SSLContext is provided in an already initialized state
+                continue;
+            }
+            SSLContext sslContext = SSLContext.getInstance(protocol);
+            sslContext.init(null, null, null);
+        }
+    }
+
+    public void test_SSLContext_init_withEmptyManagerArrays() throws Exception {
+        // Assert that SSLContext.init works fine even when provided with empty arrays of
+        // KeyManagers and TrustManagers.
+        // The contract of SSLContext.init is that it will not look for default X.509 KeyManager and
+        // TrustManager.
+        // This test thus installs a Provider of KeyManagerFactory and TrustManagerFactory whose
+        // factories throw exceptions which will make this test fail if the factories are used.
+        Provider provider = new ThrowExceptionKeyAndTrustManagerFactoryProvider();
+        invokeWithHighestPrioritySecurityProvider(provider, new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                assertEquals(
+                        ThrowExceptionKeyAndTrustManagerFactoryProvider.class,
+                        TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+                                .getProvider().getClass());
+                assertEquals(
+                        ThrowExceptionKeyAndTrustManagerFactoryProvider.class,
+                        KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
+                                .getProvider().getClass());
+
+                KeyManager[] keyManagers = new KeyManager[0];
+                TrustManager[] trustManagers = new TrustManager[0];
+                for (String protocol : StandardNames.SSL_CONTEXT_PROTOCOLS) {
+                    if (protocol.equals(StandardNames.SSL_CONTEXT_PROTOCOLS_DEFAULT)) {
+                        // Default SSLContext is provided in an already initialized state
+                        continue;
+                    }
+                    SSLContext sslContext = SSLContext.getInstance(protocol);
+                    sslContext.init(keyManagers, trustManagers, null);
                 }
-            } else {
-                sslContext.init(null, null, null);
+
+                return null;
+            }
+        });
+    }
+
+    public void test_SSLContext_init_withoutX509() throws Exception {
+        // Assert that SSLContext.init works fine even when provided with KeyManagers and
+        // TrustManagers which don't include the X.509 ones.
+        // The contract of SSLContext.init is that it will not look for default X.509 KeyManager and
+        // TrustManager.
+        // This test thus installs a Provider of KeyManagerFactory and TrustManagerFactory whose
+        // factories throw exceptions which will make this test fail if the factories are used.
+        Provider provider = new ThrowExceptionKeyAndTrustManagerFactoryProvider();
+        invokeWithHighestPrioritySecurityProvider(provider, new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                assertEquals(
+                        ThrowExceptionKeyAndTrustManagerFactoryProvider.class,
+                        TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+                                .getProvider().getClass());
+                assertEquals(
+                        ThrowExceptionKeyAndTrustManagerFactoryProvider.class,
+                        KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
+                                .getProvider().getClass());
+
+                KeyManager[] keyManagers = new KeyManager[] {new KeyManager() {}};
+                TrustManager[] trustManagers = new TrustManager[] {new TrustManager() {}};
+                for (String protocol : StandardNames.SSL_CONTEXT_PROTOCOLS) {
+                    if (protocol.equals(StandardNames.SSL_CONTEXT_PROTOCOLS_DEFAULT)) {
+                        // Default SSLContext is provided in an already initialized state
+                        continue;
+                    }
+                    SSLContext sslContext = SSLContext.getInstance(protocol);
+                    sslContext.init(keyManagers, trustManagers, null);
+                }
+
+                return null;
+            }
+        });
+    }
+
+    public static class ThrowExceptionKeyAndTrustManagerFactoryProvider extends Provider {
+        public ThrowExceptionKeyAndTrustManagerFactoryProvider() {
+            super("ThrowExceptionKeyAndTrustManagerProvider",
+                    1.0,
+                    "SSLContextTest fake KeyManagerFactory  and TrustManagerFactory provider");
+
+            put("TrustManagerFactory." + TrustManagerFactory.getDefaultAlgorithm(),
+                    ThrowExceptionTrustManagagerFactorySpi.class.getName());
+            put("TrustManagerFactory.PKIX", ThrowExceptionTrustManagagerFactorySpi.class.getName());
+
+            put("KeyManagerFactory." + KeyManagerFactory.getDefaultAlgorithm(),
+                    ThrowExceptionKeyManagagerFactorySpi.class.getName());
+            put("KeyManagerFactory.PKIX", ThrowExceptionKeyManagagerFactorySpi.class.getName());
+        }
+    }
+
+    public static class ThrowExceptionTrustManagagerFactorySpi extends TrustManagerFactorySpi {
+        @Override
+        protected void engineInit(KeyStore ks) throws KeyStoreException {
+            fail();
+        }
+
+        @Override
+        protected void engineInit(ManagerFactoryParameters spec)
+                throws InvalidAlgorithmParameterException {
+            fail();
+        }
+
+        @Override
+        protected TrustManager[] engineGetTrustManagers() {
+            throw new AssertionFailedError();
+        }
+    }
+
+    public static class ThrowExceptionKeyManagagerFactorySpi extends KeyManagerFactorySpi {
+        @Override
+        protected void engineInit(KeyStore ks, char[] password) throws KeyStoreException,
+                NoSuchAlgorithmException, UnrecoverableKeyException {
+            fail();
+        }
+
+        @Override
+        protected void engineInit(ManagerFactoryParameters spec)
+                throws InvalidAlgorithmParameterException {
+            fail();
+        }
+
+        @Override
+        protected KeyManager[] engineGetKeyManagers() {
+            throw new AssertionFailedError();
+        }
+    }
+
+    /**
+     * Installs the specified security provider as the highest provider, invokes the provided
+     * {@link Callable}, and removes the provider.
+     *
+     * @return result returned by the {@code callable}.
+     */
+    private static <T> T invokeWithHighestPrioritySecurityProvider(
+            Provider provider, Callable<T> callable) throws Exception {
+        int providerPosition = -1;
+        try {
+            providerPosition = Security.insertProviderAt(provider, 1);
+            assertEquals(1, providerPosition);
+            return callable.call();
+        } finally {
+            if (providerPosition != -1) {
+                Security.removeProvider(provider.getName());
             }
         }
     }
@@ -244,53 +533,6 @@ public class SSLContextTest extends TestCase {
         }
     }
 
-    public void test_SSLContext_getDefaultSSLParameters() throws Exception {
-        for (String protocol : StandardNames.SSL_CONTEXT_PROTOCOLS) {
-            SSLContext sslContext = SSLContext.getInstance(protocol);
-            if (!protocol.equals(StandardNames.SSL_CONTEXT_PROTOCOLS_DEFAULT)) {
-                sslContext.init(null, null, null);
-            }
-
-            SSLParameters p = sslContext.getDefaultSSLParameters();
-            assertNotNull(p);
-
-            String[] cipherSuites = p.getCipherSuites();
-            assertNotNull(cipherSuites);
-            StandardNames.assertValidCipherSuites(StandardNames.CIPHER_SUITES, cipherSuites);
-
-            String[] protocols = p.getProtocols();
-            assertNotNull(protocols);
-            StandardNames.assertValidCipherSuites(StandardNames.SSL_SOCKET_PROTOCOLS, protocols);
-
-            assertFalse(p.getWantClientAuth());
-            assertFalse(p.getNeedClientAuth());
-        }
-    }
-
-    public void test_SSLContext_getSupportedSSLParameters() throws Exception {
-        for (String protocol : StandardNames.SSL_CONTEXT_PROTOCOLS) {
-            SSLContext sslContext = SSLContext.getInstance(protocol);
-            if (!protocol.equals(StandardNames.SSL_CONTEXT_PROTOCOLS_DEFAULT)) {
-                sslContext.init(null, null, null);
-            }
-
-            SSLParameters p = sslContext.getSupportedSSLParameters();
-            assertNotNull(p);
-
-            String[] cipherSuites = p.getCipherSuites();
-            assertNotNull(cipherSuites);
-            StandardNames.assertSupportedCipherSuites(StandardNames.CIPHER_SUITES, cipherSuites);
-
-            String[] protocols = p.getProtocols();
-            assertNotNull(protocols);
-            StandardNames.assertSupportedProtocols(StandardNames.SSL_SOCKET_PROTOCOLS,
-                                                   protocols);
-
-            assertFalse(p.getWantClientAuth());
-            assertFalse(p.getNeedClientAuth());
-        }
-    }
-
     public void test_SSLContextTest_TestSSLContext_create() {
         TestSSLContext testContext = TestSSLContext.create();
         assertNotNull(testContext);
@@ -298,8 +540,16 @@ public class SSLContextTest extends TestCase {
         assertNull(testContext.clientStorePassword);
         assertNotNull(testContext.serverKeyStore);
         assertEquals(StandardNames.IS_RI, testContext.serverStorePassword != null);
-        assertNotNull(testContext.clientKeyManager);
-        assertNotNull(testContext.serverKeyManager);
+        assertNotNull(testContext.clientKeyManagers);
+        assertNotNull(testContext.serverKeyManagers);
+        if (testContext.clientKeyManagers.length == 0) {
+          fail("No client KeyManagers");
+        }
+        if (testContext.serverKeyManagers.length == 0) {
+          fail("No server KeyManagers");
+        }
+        assertNotNull(testContext.clientKeyManagers[0]);
+        assertNotNull(testContext.serverKeyManagers[0]);
         assertNotNull(testContext.clientTrustManager);
         assertNotNull(testContext.serverTrustManager);
         assertNotNull(testContext.clientContext);
@@ -308,5 +558,17 @@ public class SSLContextTest extends TestCase {
         assertNotNull(testContext.host);
         assertTrue(testContext.port != 0);
         testContext.close();
+    }
+
+    private static void assertContentsInOrder(List<String> expected, String... actual) {
+        if (expected.size() != actual.length) {
+            fail("Unexpected length. Expected len <" + expected.size()
+                    + ">, actual len <" + actual.length + ">, expected <" + expected
+                    + ">, actual <" + Arrays.asList(actual) + ">");
+        }
+        if (!expected.equals(Arrays.asList(actual))) {
+            fail("Unexpected element(s). Expected <" + expected
+                    + ">, actual <" + Arrays.asList(actual) + ">" );
+        }
     }
 }

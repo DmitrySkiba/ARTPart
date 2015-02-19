@@ -24,6 +24,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import junit.framework.TestCase;
 
 public final class MessageDigestTest extends TestCase {
@@ -116,6 +121,12 @@ public final class MessageDigestTest extends TestCase {
                        new byte[] { -38, 57, -93, -18, 94, 107, 75, 13,
                                     50, 85, -65, -17, -107, 96, 24, -112,
                                     -81, -40, 7, 9});
+        putExpectation("SHA-224",
+                       INPUT_EMPTY,
+                       new byte[] { -47, 74, 2, -116, 42, 58, 43, -55, 71,
+                                    97, 2, -69, 40, -126, 52, -60, 21,
+                                    -94, -80, 31, -126, -114, -90, 42,
+                                    -59, -77, -28, 47});
         putExpectation("SHA-256",
                        INPUT_EMPTY,
                        new byte[] { -29, -80, -60, 66, -104, -4, 28, 20,
@@ -163,6 +174,12 @@ public final class MessageDigestTest extends TestCase {
                            new byte[] { 123, -111, -37, -36, 86, -59, 120, 30,
                                         -33, 108, -120, 71, -76, -86, 105, 101,
                                         86, 108, 92, 117 });
+            putExpectation("SHA-224",
+                           INPUT_256MB,
+                           new byte[] { -78, 82, 5, -71, 57, 119, 77, -32,
+                                        -62, -74, -40, 64, -57, 79, 40, 116,
+                                        -18, 48, -69, 45, 18, -94, 111, 114,
+                                        -45, -93, 43, -11 });
             putExpectation("SHA-256",
                            INPUT_256MB,
                            new byte[] { -90, -41, 42, -57, 105, 15, 83, -66,
@@ -227,4 +244,33 @@ public final class MessageDigestTest extends TestCase {
         return buf.toString();
     }
 
+    private final int THREAD_COUNT = 10;
+
+    public void testMessageDigest_MultipleThreads_Misuse() throws Exception {
+        ExecutorService es = Executors.newFixedThreadPool(THREAD_COUNT);
+
+        final CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
+        final MessageDigest md = MessageDigest.getInstance("SHA-256");
+        final byte[] message = new byte[64];
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            es.submit(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    // Try to make sure all the threads are ready first.
+                    latch.countDown();
+                    latch.await();
+
+                    for (int j = 0; j < 100; j++) {
+                        md.update(message);
+                        md.digest();
+                    }
+
+                    return null;
+                }
+            });
+        }
+        es.shutdown();
+        assertTrue("Test should not timeout", es.awaitTermination(1, TimeUnit.MINUTES));
+    }
 }

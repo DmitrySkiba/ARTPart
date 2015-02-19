@@ -39,8 +39,9 @@ int JNI_OnLoad(JavaVM* vm, void*)
     ScopedLocalFrame localFrame(env);
 
 #define REGISTER(FN) extern void FN(JNIEnv*); FN(env)
-    REGISTER(register_java_io_Console);
+    REGISTER(register_android_system_OsConstants);
     REGISTER(register_java_io_File);
+    REGISTER(register_java_io_FileDescriptor);
     REGISTER(register_java_io_ObjectStreamClass);
     REGISTER(register_java_lang_Character);
     REGISTER(register_java_lang_Double);
@@ -55,6 +56,7 @@ int JNI_OnLoad(JavaVM* vm, void*)
     REGISTER(register_java_nio_ByteOrder);
     REGISTER(register_java_nio_charset_Charsets);
     REGISTER(register_java_text_Bidi);
+    REGISTER(register_java_util_jar_StrictJarFile);
     REGISTER(register_java_util_regex_Matcher);
     REGISTER(register_java_util_regex_Pattern);
     REGISTER(register_java_util_zip_Adler32);
@@ -75,11 +77,11 @@ int JNI_OnLoad(JavaVM* vm, void*)
     REGISTER(register_libcore_icu_Transliterator);
     REGISTER(register_libcore_io_AsynchronousCloseMonitor);
     REGISTER(register_libcore_io_Memory);
-    REGISTER(register_libcore_io_OsConstants);
     REGISTER(register_libcore_io_Posix);
     REGISTER(register_org_apache_harmony_dalvik_NativeTestTarget);
     REGISTER(register_org_apache_harmony_xml_ExpatParser);
     REGISTER(register_sun_misc_Unsafe);
 #undef REGISTER
+
     return JNI_VERSION_1_6;
 }

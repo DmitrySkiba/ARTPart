@@ -16,6 +16,13 @@
 
 package libcore.io;
 
+import android.system.ErrnoException;
+import android.system.StructGroupReq;
+import android.system.StructGroupSourceReq;
+import android.system.StructLinger;
+import android.system.StructPollfd;
+import android.system.StructTimeval;
+import android.util.MutableInt;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -35,8 +42,7 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import static libcore.io.OsConstants.*;
-import libcore.util.MutableInt;
+import static android.system.OsConstants.*;
 
 /**
  * Implements java.io/java.net/java.nio semantics in terms of the underlying POSIX system calls.
@@ -71,16 +77,20 @@ public final class IoBridge {
 
 
     public static void bind(FileDescriptor fd, InetAddress address, int port) throws SocketException {
-        if (address instanceof Inet6Address && ((Inet6Address) address).getScopeId() == 0) {
-            // Linux won't let you bind a link-local address without a scope id. Find one.
-            NetworkInterface nif = NetworkInterface.getByInetAddress(address);
-            if (nif == null) {
-                throw new SocketException("Can't bind to a link-local address without a scope id: " + address);
-            }
-            try {
-                address = Inet6Address.getByAddress(address.getHostName(), address.getAddress(), nif.getIndex());
-            } catch (UnknownHostException ex) {
-                throw new AssertionError(ex); // Can't happen.
+        if (address instanceof Inet6Address) {
+            Inet6Address inet6Address = (Inet6Address) address;
+            if (inet6Address.getScopeId() == 0 && inet6Address.isLinkLocalAddress()) {
+                // Linux won't let you bind a link-local address without a scope id.
+                // Find one.
+                NetworkInterface nif = NetworkInterface.getByInetAddress(address);
+                if (nif == null) {
+                    throw new SocketException("Can't bind to a link-local address without a scope id: " + address);
+                }
+                try {
+                    address = Inet6Address.getByAddress(address.getHostName(), address.getAddress(), nif.getIndex());
+                } catch (UnknownHostException ex) {
+                    throw new AssertionError(ex); // Can't happen.
+                }
             }
         }
         try {
@@ -95,9 +105,9 @@ public final class IoBridge {
      * Connects socket 'fd' to 'inetAddress' on 'port', with no timeout. The lack of a timeout
      * means this method won't throw SocketTimeoutException.
      */
-    public static boolean connect(FileDescriptor fd, InetAddress inetAddress, int port) throws SocketException {
+    public static void connect(FileDescriptor fd, InetAddress inetAddress, int port) throws SocketException {
         try {
-            return IoBridge.connect(fd, inetAddress, port, 0);
+            IoBridge.connect(fd, inetAddress, port, 0);
         } catch (SocketTimeoutException ex) {
             throw new AssertionError(ex); // Can't happen for a connect without a timeout.
         }
@@ -107,9 +117,9 @@ public final class IoBridge {
      * Connects socket 'fd' to 'inetAddress' on 'port', with a the given 'timeoutMs'.
      * Use timeoutMs == 0 for a blocking connect with no timeout.
      */
-    public static boolean connect(FileDescriptor fd, InetAddress inetAddress, int port, int timeoutMs) throws SocketException, SocketTimeoutException {
+    public static void connect(FileDescriptor fd, InetAddress inetAddress, int port, int timeoutMs) throws SocketException, SocketTimeoutException {
         try {
-            return connectErrno(fd, inetAddress, port, timeoutMs);
+            connectErrno(fd, inetAddress, port, timeoutMs);
         } catch (ErrnoException errnoException) {
             throw new ConnectException(connectDetail(inetAddress, port, timeoutMs, errnoException), errnoException);
         } catch (SocketException ex) {
@@ -121,11 +131,11 @@ public final class IoBridge {
         }
     }
 
-    private static boolean connectErrno(FileDescriptor fd, InetAddress inetAddress, int port, int timeoutMs) throws ErrnoException, IOException {
+    private static void connectErrno(FileDescriptor fd, InetAddress inetAddress, int port, int timeoutMs) throws ErrnoException, IOException {
         // With no timeout, just call connect(2) directly.
         if (timeoutMs == 0) {
             Libcore.os.connect(fd, inetAddress, port);
-            return true;
+            return;
         }
 
         // For connect with a timeout, we:
@@ -143,7 +153,7 @@ public final class IoBridge {
         try {
             Libcore.os.connect(fd, inetAddress, port);
             IoUtils.setBlocking(fd, true); // 4. set the socket back to blocking.
-            return true; // We connected immediately.
+            return; // We connected immediately.
         } catch (ErrnoException errnoException) {
             if (errnoException.errno != EINPROGRESS) {
                 throw errnoException;
@@ -160,7 +170,6 @@ public final class IoBridge {
             }
         } while (!IoBridge.isConnected(fd, inetAddress, port, timeoutMs, remainingTimeoutMs));
         IoUtils.setBlocking(fd, true); // 4. set the socket back to blocking.
-        return true; // Or we'd have thrown.
     }
 
     private static String connectDetail(InetAddress inetAddress, int port, int timeoutMs, ErrnoException cause) {
@@ -174,9 +183,15 @@ public final class IoBridge {
         return detail;
     }
 
-    public static void closeSocket(FileDescriptor fd) throws IOException {
-        if (!fd.valid()) {
-            // Socket.close doesn't throw if you try to close an already-closed socket.
+    /**
+     * Closes the supplied file descriptor and sends a signal to any threads are currently blocking.
+     * In order for the signal to be sent the blocked threads must have registered with
+     * the AsynchronousCloseMonitor before they entered the blocking operation.
+     *
+     * <p>This method is a no-op if passed a {@code null} or already-closed file descriptor.
+     */
+    public static void closeAndSignalBlockedThreads(FileDescriptor fd) throws IOException {
+        if (fd == null || !fd.valid()) {
             return;
         }
         int intFd = fd.getInt$();
@@ -226,6 +241,10 @@ public final class IoBridge {
     // Socket options used by java.net but not exposed in SocketOptions.
     public static final int JAVA_MCAST_JOIN_GROUP = 19;
     public static final int JAVA_MCAST_LEAVE_GROUP = 20;
+    public static final int JAVA_MCAST_JOIN_SOURCE_GROUP = 21;
+    public static final int JAVA_MCAST_LEAVE_SOURCE_GROUP = 22;
+    public static final int JAVA_MCAST_BLOCK_SOURCE = 23;
+    public static final int JAVA_MCAST_UNBLOCK_SOURCE = 24;
     public static final int JAVA_IP_MULTICAST_TTL = 17;
 
     /**
@@ -369,13 +388,43 @@ public final class IoBridge {
             return;
         case IoBridge.JAVA_MCAST_JOIN_GROUP:
         case IoBridge.JAVA_MCAST_LEAVE_GROUP:
+        {
             StructGroupReq groupReq = (StructGroupReq) value;
             int level = (groupReq.gr_group instanceof Inet4Address) ? IPPROTO_IP : IPPROTO_IPV6;
             int op = (option == JAVA_MCAST_JOIN_GROUP) ? MCAST_JOIN_GROUP : MCAST_LEAVE_GROUP;
             Libcore.os.setsockoptGroupReq(fd, level, op, groupReq);
             return;
+        }
+        case IoBridge.JAVA_MCAST_JOIN_SOURCE_GROUP:
+        case IoBridge.JAVA_MCAST_LEAVE_SOURCE_GROUP:
+        case IoBridge.JAVA_MCAST_BLOCK_SOURCE:
+        case IoBridge.JAVA_MCAST_UNBLOCK_SOURCE:
+        {
+            StructGroupSourceReq groupSourceReq = (StructGroupSourceReq) value;
+            int level = (groupSourceReq.gsr_group instanceof Inet4Address)
+                ? IPPROTO_IP : IPPROTO_IPV6;
+            int op = getGroupSourceReqOp(option);
+            Libcore.os.setsockoptGroupSourceReq(fd, level, op, groupSourceReq);
+            return;
+        }
         default:
             throw new SocketException("Unknown socket option: " + option);
+        }
+    }
+
+    private static int getGroupSourceReqOp(int javaValue) {
+        switch (javaValue) {
+            case IoBridge.JAVA_MCAST_JOIN_SOURCE_GROUP:
+                return MCAST_JOIN_SOURCE_GROUP;
+            case IoBridge.JAVA_MCAST_LEAVE_SOURCE_GROUP:
+                return MCAST_LEAVE_SOURCE_GROUP;
+            case IoBridge.JAVA_MCAST_BLOCK_SOURCE:
+                return MCAST_BLOCK_SOURCE;
+            case IoBridge.JAVA_MCAST_UNBLOCK_SOURCE:
+                return MCAST_UNBLOCK_SOURCE;
+            default:
+                throw new AssertionError(
+                        "Unknown java value for setsocketopt op lookup: " + javaValue);
         }
     }
 
@@ -391,12 +440,10 @@ public final class IoBridge {
             // On Android, we don't want default permissions to allow global access.
             int mode = ((flags & O_ACCMODE) == O_RDONLY) ? 0 : 0600;
             fd = Libcore.os.open(path, flags, mode);
-            if (fd.valid()) {
-                // Posix open(2) fails with EISDIR only if you ask for write permission.
-                // Java disallows reading directories too.
-                if (S_ISDIR(Libcore.os.fstat(fd).st_mode)) {
-                    throw new ErrnoException("open", EISDIR);
-                }
+            // Posix open(2) fails with EISDIR only if you ask for write permission.
+            // Java disallows reading directories too.
+            if (S_ISDIR(Libcore.os.fstat(fd).st_mode)) {
+                throw new ErrnoException("open", EISDIR);
             }
             return fd;
         } catch (ErrnoException errnoException) {

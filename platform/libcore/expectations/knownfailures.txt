@@ -3,24 +3,9 @@
  */
 [
 {
-  description: "four known CharsetDecoder-/CharsetEncoder-related failures",
-  names: [
-    "org.apache.harmony.nio_char.tests.java.nio.charset.ASCIICharsetEncoderTest#testCanEncodeSurrogate",
-    "org.apache.harmony.nio_char.tests.java.nio.charset.ASCIICharsetEncoderTest#testMultiStepEncode",
-    "org.apache.harmony.nio_char.tests.java.nio.charset.CharsetDecoderTest#testInvalidDecoding",
-    "org.apache.harmony.nio_char.tests.java.nio.charset.CharsetDecoderTest#test_decode"
-  ],
-  bug: 10729779
-},
-{
   description: "can't compile a pattern with negative look-behind and quantifiers with upper bounds",
   name: "org.apache.harmony.regex.tests.java.util.regex.PatternTest#test_bug_40103",
   bug: 40103
-},
-{
-  description: "our regex implementation calls toString on CharSequences",
-  name: "org.apache.harmony.luni.tests.java.util.ScannerParseLargeFileBenchmarkTest#testParseLargeFile",
-  bug: 10133206
 },
 {
   description: "Package.getPackages(), ClassLoader.getPackages() both omit results",
@@ -28,112 +13,9 @@
   bug: 5171136
 },
 {
-  description: "Deserialization shouldn't set transient fields",
-  name: "libcore.java.io.SerializationTest#testSerializeFieldMadeTransient",
-  bug: 4471249
-},
-{
-  description: "Investigate InterruptedIOException + InputStream.read(), OutputStream.write()",
-  names: [
-    "libcore.java.io.InterruptedStreamTest#testInterruptSocketInputStream",
-    "libcore.java.io.InterruptedStreamTest#testInterruptSocketOutputStream"
-  ],
-  bug: 4181738
-},
-{
-  description: "SimpleDateFormat assumes DST always uses 60 minute offset; this fails for zones like Lord Howe Daylight Time",
-  name: "libcore.java.text.SimpleDateFormatTest#testDstZoneWithNonDstTimestampForNonHourDstZone",
-  bug: 4723412
-},
-{
-  description: "Expat uses an unbounded number of global references",
-  name: "libcore.xml.ExpatSaxParserTest#testGlobalReferenceTableOverflow",
-  bug: 2772628
-},
-{
-  description: "Test fails, Intermediate certificate lacks BasicConstraints",
-  name: "com.android.org.bouncycastle.jce.provider.PKIXCertPathValidatorSpiTest#testTrustAndRemoteCertificatesWithDifferentEncodings",
-  bug: 3474648
-},
-{
-  description: "DHParametersHelper.generateSafePrimes sometimes takes long time, other times takes a very long time",
-  name: "org.apache.harmony.crypto.tests.javax.crypto.interfaces.DHPrivateKeyTest#test_getParams",
-  bug: 3474446
-},
-{
   description: "KeyAgreementFunctionalTest times out even with an absurdly long timeout",
   name: "org.apache.harmony.crypto.tests.javax.crypto.func.KeyAgreementFunctionalTest#test_KeyAgreement",
   bug: 3473300
-},
-{
-  name: "libcore.java.lang.StringTest#testCaseMapping_en_US",
-  bug: 3387655
-},
-{
-  name: "libcore.java.io.FileTest#test_emptyFilename",
-  bug: 3387758
-},
-{
-  description: "KxmlPullParser doesn't enforce top-level document element",
-  names: [
-    "libcore.xml.KxmlPullParserDtdTest#testDoctypeInDocumentElement",
-    "libcore.xml.KxmlPullParserDtdTest#testDoctypeAfterDocumentElement"
-  ],
-  bug: 3452274
-},
-{
-  description: "URLConnection fails on URLs containing {}",
-  name: "libcore.java.net.URLConnectionTest#testMalformedUrl",
-  bug: 1158780,
-  substring: "java.net.URISyntaxException"
-},
-{
-  description: "KxmlParser doesn't expose DTD text",
-  name: "libcore.xml.KxmlPullParserDtdTest#testDoctypeWithNextToken",
-  bug: 3241492
-},
-{
-  description: "Expat relaxed is different from Kxml relaxed",
-  names: [
-    "libcore.xml.ExpatPullParserTest#testAttributeNoValueWithRelaxed",
-    "libcore.xml.ExpatPullParserTest#testAttributeUnquotedValueWithRelaxed",
-    "libcore.xml.ExpatPullParserTest#testMissingEntitiesWithRelaxed",
-    "libcore.xml.ExpatPullParserTest#testUnterminatedEntityWithRelaxed"
-  ],
-  bug: 3090550
-},
-{
-  description: "ExpatPullParser doesn't support nextToken() or line numbers",
-  names: [
-    "libcore.xml.ExpatPullParserDtdTest#testDoctypeWithNextToken",
-    "libcore.xml.ExpatPullParserTest#testCdataUsingNextToken",
-    "libcore.xml.ExpatPullParserTest#testCommentUsingNextToken",
-    "libcore.xml.ExpatPullParserTest#testCustomEntitiesAreNotEvaluated",
-    "libcore.xml.ExpatPullParserTest#testCustomEntitiesUsingNext",
-    "libcore.xml.ExpatPullParserTest#testCustomEntitiesUsingNextToken",
-    "libcore.xml.ExpatPullParserTest#testEmptyCdataUsingNextToken",
-    "libcore.xml.ExpatPullParserTest#testEmptyComment",
-    "libcore.xml.ExpatPullParserTest#testEmptyEntityReferenceUsingNext",
-    "libcore.xml.ExpatPullParserTest#testEmptyEntityReferenceUsingNextToken",
-    "libcore.xml.ExpatPullParserTest#testEntityInAttributeUsingNextToken",
-    "libcore.xml.ExpatPullParserTest#testLinesAndColumns",
-    "libcore.xml.ExpatPullParserTest#testMissingEntitiesInAttributesUsingNextToken",
-    "libcore.xml.ExpatPullParserTest#testMissingEntitiesInAttributesUsingNextTokenWithRelaxed",
-    "libcore.xml.ExpatPullParserTest#testMissingEntitiesInAttributesUsingNextWithRelaxed",
-    "libcore.xml.ExpatPullParserTest#testMissingEntitiesUsingNextToken",
-    "libcore.xml.ExpatPullParserTest#testMissingEntitiesUsingNextTokenWithRelaxed",
-    "libcore.xml.ExpatPullParserTest#testProcessingInstructionUsingNextToken",
-    "libcore.xml.ExpatPullParserTest#testRegularNumericEntities",
-    "libcore.xml.ExpatPullParserTest#testWhitespaceUsingNextToken",
-    "libcore.xml.ExpatPullParserTest#testXmlDeclaration",
-    "libcore.xml.ExpatPullParserTest#testXmlDeclarationExtraAttributes"
-  ],
-  bug: 3090550
-},
-{
-  description: "ExpatPullParser doesn't handle surrogates properly",
-  name: "libcore.xml.ExpatPullParserTest#testCharacterReferenceOfLastUtf16Surrogate",
-  bug: 3090550
 },
 {
   description: "RandomAccessFile missing finalizer",
@@ -146,46 +28,9 @@
   bug: 2541757
 },
 {
-  description: "Root locale uses INF for infinity but unknown locales use \u221e",
-  name: "libcore.java.text.DecimalFormatSymbolsTest#test_getInstance_unknown_or_invalid_locale",
-  bug: 3056617
-},
-{
-  description: "Minimal days in first week is broken",
-  names: [
-    "libcore.java.text.OldSimpleDateFormatTest#testFormattingWeekOfYear",
-    "libcore.java.text.OldSimpleDateFormatTest#testDefaultMinimalDaysInFirstWeek"
-  ],
-  bug: 1613709
-},
-{
-  description: "Custom SimpleTimeZones not honored by SimpleDateFormat",
-  name: "libcore.java.text.OldSimpleDateFormatTest#testFormattingTimezones",
-  bug: 3049014
-},
-{
   description: "NaN character not found when deserializing DecimalFormatSymbols",
   name: "libcore.java.text.OldDecimalFormatSymbolsTest#test_RIHarmony_compatible",
   bug: 3056792
-},
-{
-  description: "DecimalFormat.formatToCharacterIterator() is failing tests",
-  names: [
-    "libcore.java.text.OldDecimalFormatTest#test_formatToCharacterIterator",
-    "org.apache.harmony.text.tests.java.text.DecimalFormatTest#test_formatToCharacterIteratorLjava_lang_Object",
-    "org.apache.harmony.text.tests.java.text.DecimalFormatTest#test_formatToCharacterIteratorLjava_lang_Object__ArithmeticException"
-  ],
-  bug: 3056865
-},
-{
-  description: "DecimalFormat.parse returns wrong type with multiplier: expected Long but was Double",
-  name: "libcore.java.text.OldDecimalFormatTest#test_parseLjava_lang_StringLjava_text_ParsePosition",
-  bug: 3057080
-},
-{
-  description: "DecimalFormat FieldPosition not updated with correct begin and end indices",
-  name: "libcore.java.text.OldDecimalFormatTest#test_formatDLjava_lang_StringBufferLjava_text_FieldPosition",
-  bug: 3057090
 },
 {
   description: "DecimalFormat is limited to 127 digits",
@@ -198,54 +43,14 @@
   bug: 3042192
 },
 {
-  description: "Cookie tests failing on the host",
-  bug: 3041920,
-  names: [
-    "libcore.java.net.CookiesTest#testNetscapeResponse",
-    "libcore.java.net.CookiesTest#testQuotedAttributeValues",
-    "libcore.java.net.CookiesTest#testRfc2109Response",
-    "libcore.java.net.CookiesTest#testRfc2965Response",
-    "libcore.java.net.CookiesTest#testSendingCookiesFromStore"
-  ],
-  modes: [ "host" ]
-},
-{
-  description: "Math failures when running on the host",
-  names: [
-    "libcore.java.lang.OldAndroidStrictMathTest#testLog1pD",
-    "libcore.java.lang.OldAndroidStrictMathTest#testRintD",
-    "org.apache.harmony.luni.tests.java.lang.MathTest#test_cbrt_D",
-    "org.apache.harmony.luni.tests.java.lang.MathTest#test_powDD",
-    "org.apache.harmony.luni.tests.java.lang.MathTest#test_sinh_D",
-    "org.apache.harmony.luni.tests.java.lang.StrictMathTest#test_log1p_D",
-    "org.apache.harmony.luni.tests.java.lang.StrictMathTest#test_rintD"
-  ],
-  bug: 2931959,
-  modes: [ "host" ]
-},
-{
-  description: "Double.parseDouble().toString does wrong rounding",
-  names: [
-    "libcore.java.lang.OldDoubleTest#test_parseDoubleLjava_lang_String",
-    "libcore.java.lang.DoubleTest#testParseLargestSubnormalDoublePrecision"
-  ],
-  bug: 1607938
-},
-{
   description: "We fake support for these by substituting similar (but not identical) charsets",
   names: [
     "libcore.java.nio.charset.OldCharset_MultiByte_Big5#test_Decode",
     "libcore.java.nio.charset.OldCharset_MultiByte_Big5#test_Encode",
-    "libcore.java.nio.charset.OldCharset_MultiByte_EUC_JP#test_CodecDynamic",
-    "libcore.java.nio.charset.OldCharset_MultiByte_EUC_JP#test_Decode",
-    "libcore.java.nio.charset.OldCharset_MultiByte_EUC_JP#test_Encode",
     "libcore.java.nio.charset.OldCharset_MultiByte_GB2312#test_Decode",
     "libcore.java.nio.charset.OldCharset_MultiByte_GB2312#test_Encode",
     "libcore.java.nio.charset.OldCharset_MultiByte_GB2312#test_nameMatch",
-    "libcore.java.nio.charset.OldCharset_MultiByte_GBK#test_Decode",
     "libcore.java.nio.charset.OldCharset_MultiByte_GBK#test_Encode",
-    "libcore.java.nio.charset.OldCharset_MultiByte_ISO_2022_JP#test_Decode",
-    "libcore.java.nio.charset.OldCharset_MultiByte_ISO_2022_JP#test_Encode",
     "libcore.java.nio.charset.OldCharset_MultiByte_x_windows_950#test_Encode",
     "libcore.java.nio.charset.OldCharset_MultiByte_x_windows_950#test_nameMatch"
   ],
@@ -256,39 +61,17 @@
   names: [
     "libcore.java.nio.charset.CharsetEncoderTest#test_defaultReplacementBytesUtf_16",
     "libcore.java.nio.charset.OldCharset_MultiByte_UTF_16#test_Encode",
-    "tests.api.java.nio.charset.CharsetTest#test_UTF_16",
-    "tests.api.java.nio.charset.CharsetTest#test_UTF_32",
-    "tests.api.java.nio.charset.CharsetTest#test_UTF_16BE",
-    "tests.api.java.nio.charset.CharsetTest#test_UTF_16LE",
-    "tests.api.java.nio.charset.CharsetTest#test_UTF_32BE",
-    "tests.api.java.nio.charset.CharsetTest#test_UTF_32LE",
-    "tests.api.java.nio.charset.CharsetTest#test_x_UTF_16LE_BOM",
-    "tests.api.java.nio.charset.CharsetTest#test_X_UTF_32BE_BOM",
-    "tests.api.java.nio.charset.CharsetTest#test_X_UTF_32LE_BOM"
+    "org.apache.harmony.tests.java.nio.charset.CharsetTest#test_UTF_16",
+    "org.apache.harmony.tests.java.nio.charset.CharsetTest#test_UTF_16BE",
+    "org.apache.harmony.tests.java.nio.charset.CharsetTest#test_UTF_16LE",
+    "org.apache.harmony.tests.java.nio.charset.CharsetTest#test_UTF_32",
+    "org.apache.harmony.tests.java.nio.charset.CharsetTest#test_UTF_32BE",
+    "org.apache.harmony.tests.java.nio.charset.CharsetTest#test_UTF_32LE",
+    "org.apache.harmony.tests.java.nio.charset.CharsetTest#test_x_UTF_16LE_BOM",
+    "org.apache.harmony.tests.java.nio.charset.CharsetTest#test_X_UTF_32BE_BOM",
+    "org.apache.harmony.tests.java.nio.charset.CharsetTest#test_X_UTF_32LE_BOM"
   ],
   bug: 2702411
-},
-{
-  description: "HTTPS proxy broken on host",
-  names: [
-    "org.apache.harmony.luni.tests.internal.net.www.protocol.https.HttpsURLConnectionTest#testConsequentProxyConnection",
-    "org.apache.harmony.luni.tests.internal.net.www.protocol.https.HttpsURLConnectionTest#testProxyAuthConnection",
-    "org.apache.harmony.luni.tests.internal.net.www.protocol.https.HttpsURLConnectionTest#testProxyAuthConnection_doOutput",
-    "org.apache.harmony.luni.tests.internal.net.www.protocol.https.HttpsURLConnectionTest#testProxyConnection",
-    "org.apache.harmony.luni.tests.internal.net.www.protocol.https.HttpsURLConnectionTest#testProxyConnection_Not_Found_Response"
-  ],
-  bug: 3032875,
-  modes: [ "host" ]
-},
-{
-  description: "Defining classes from byte[] not supported in Android",
-  result: EXEC_FAILED,
-  name: "libcore.java.lang.OldClassTest#test_getClasses_subtest0"
-},
-{
-  description: "There is no protection domain set in Android.",
-  result: EXEC_FAILED,
-  name: "libcore.java.lang.OldClassTest#test_getProtectionDomain"
 },
 {
   description: "Runtime.getRuntime().traceMethodCalls(true) doesn't return on the host, fails in CTS",
@@ -299,18 +82,7 @@
   description: "It's not allowed to pass null as parent class loader to a new ClassLoader anymore. Maybe we need
                 to change URLClassLoader to allow this? It's not specified.",
   result: EXEC_FAILED,
-  name: "tests.api.java.util.ResourceBundleTest#test_getBundleLjava_lang_StringLjava_util_LocaleLjava_lang_ClassLoader"
-},
-{
-  description: "Fails (probably) because no protection domain is set.",
-  result: EXEC_FAILED,
-  names: [
-    "org.apache.harmony.security.tests.java.security.AccessController2Test#test_checkPermission_InvalidPermission",
-    "org.apache.harmony.security.tests.java.security.AccessController2Test#test_doPrivilegedLjava_security_PrivilegedAction",
-    "org.apache.harmony.security.tests.java.security.AccessController2Test#test_doPrivilegedLjava_security_PrivilegedActionLjava_security_AccessControlContext",
-    "org.apache.harmony.security.tests.java.security.AccessController2Test#test_doPrivilegedLjava_security_PrivilegedExceptionAction",
-    "org.apache.harmony.security.tests.java.security.AccessController2Test#test_doPrivilegedLjava_security_PrivilegedExceptionActionLjava_security_AccessControlContext"
-  ]
+  name: "org.apache.harmony.tests.java.util.ResourceBundleTest#test_getBundleLjava_lang_StringLjava_util_LocaleLjava_lang_ClassLoader"
 },
 {
   description: "Android throws IllegalArgumentException, RI throws NullPointerException",
@@ -318,19 +90,9 @@
   name: "org.apache.harmony.security.tests.java.security.SignatureTest#testUpdatebyteArrayintint2"
 },
 {
-  description: "Android doesn't support protection domains.",
-  result: EXEC_FAILED,
-  name: "tests.api.java.security.PermissionCollectionTest#test_impliesLjava_security_Permission"
-},
-{
   description: "Android doesn't allow null parent.",
   result: EXEC_FAILED,
   name: "tests.java.security.SecureClassLoaderTest#testSecureClassLoaderClassLoader"
-},
-{
-  description: "Not all Drivers are loaded in testsetup. ClassLoader issue in DriverManager.",
-  result: EXEC_FAILED,
-  name: "org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testDeregisterDriver"
 },
 {
   description: "not supported",
@@ -350,7 +112,7 @@
   name: "tests.java.sql.DatabaseMetaDataTest#test_getColumnsArbitrary"
 },
 {
-  description: "Wildcard operator does not seem wo work correctly.",
+  description: "Wildcard operator does not seem to work correctly.",
   result: EXEC_FAILED,
   name: "tests.java.sql.DatabaseMetaDataTest#test_getColumnsSpecific"
 },
@@ -809,19 +571,12 @@
   ]
 },
 {
-  description: "res.close() does not wrap up",
-  bug: 3403706,
-  name: "libcore.java.sql.OldResultSetTest#testAfterLast"
-},
-{
   description: "statement.close() does not wrap up",
   bug: 3403706,
-  name: "libcore.java.sql.OldResultSetTest#testBeforeFirst"
-},
-{
-  description: "Not supported",
-  bug: 3403706,
-  name: "libcore.java.sql.OldResultSetTest#testClearWarnings"
+  names: [
+    "libcore.java.sql.OldResultSetTest#testBeforeFirst",
+    "libcore.java.sql.OldResultSetTest#testAfterLast"
+  ]
 },
 {
   description: "Resultset.close() does not wrap up",
@@ -961,142 +716,10 @@
   name: "libcore.java.sql.OldStatementTest#testGetUpdateCount"
 },
 {
-  description: "Handshake Status is never finished. NPE in ClientSessionContext$HostAndPort.hashCode() when host
-                is null",
-  bug: 3403706,
-  name: "tests.api.javax.net.ssl.SSLEngineTest#testHandshake"
-},
-{
-  description: "com.android.org.conscrypt.SSLEngineImpl#getDelegatedTask() throws NPE instead of
-                returning null",
-  bug: 3403706,
-  name: "tests.api.javax.net.ssl.SSLEngineTest#test_getDelegatedTask"
-},
-{
-  description: "Fixed in DonutBurger, boundary checks missing",
-  bug: 3403706,
-  name: "tests.api.javax.net.ssl.SSLEngineTest#test_unwrap_02"
-},
-{
-  description: "Fixed on DonutBurger, Wrong Exception thrown",
-  bug: 3403706,
-  names: [
-    "tests.api.javax.net.ssl.SSLEngineTest#test_unwrap_03",
-    "tests.api.javax.net.ssl.SSLEngineTest#test_unwrap_04",
-    "tests.api.javax.net.ssl.SSLEngineTest#test_unwrap_ByteBuffer$ByteBuffer_02",
-    "tests.api.javax.net.ssl.SSLEngineTest#test_unwrap_ByteBuffer$ByteBuffer_03",
-    "tests.api.javax.net.ssl.SSLEngineTest#test_unwrap_ByteBuffer_ByteBuffer_02",
-    "tests.api.javax.net.ssl.SSLEngineTest#test_unwrap_ByteBuffer_ByteBuffer_03"
-  ]
-},
-{
-  description: "Fixed in DonutBurger, boundary checks missing",
-  bug: 3403706,
-  name: "tests.api.javax.net.ssl.SSLEngineTest#test_wrap_02"
-},
-{
-  description: "Fixed on DonutBurger, Wrong Exception thrown",
-  bug: 3403706,
-  names: [
-    "tests.api.javax.net.ssl.SSLEngineTest#test_wrap_04",
-    "tests.api.javax.net.ssl.SSLEngineTest#test_wrap_ByteBuffer$ByteBuffer_03",
-    "tests.api.javax.net.ssl.SSLEngineTest#test_wrap_ByteBuffer_ByteBuffer_03"
-  ]
-},
-{
   description: "ManagerFactoryParameters object is not supported and InvalidAlgorithmParameterException was
                 thrown.",
   bug: 3403706,
   name: "tests.api.javax.net.ssl.TrustManagerFactory1Test#test_initLjavax_net_ssl_ManagerFactoryParameters"
-},
-{
-  description: "HostnameVerifier doesn't verify IP addresses",
-  bug: 3299188,
-  name: "tests.api.javax.net.ssl.HostnameVerifierTest#testVerifyIpAddress"
-},
-{
-  description: "NO SERVER CERTIFICATE FOUND - selectSuite should not pick a suite that needs a certificate if it is missing",
-  bug: 3045163,
-  name: "libcore.javax.net.ssl.SSLEngineTest#test_SSLEngine_beginHandshake_noKeyStore"
-},
-{
-  description: "AlertException instead of SSLException",
-  bug: 3045163,
-  name: "libcore.javax.net.ssl.SSLEngineTest#test_SSLEngine_setEnableSessionCreation_client"
-},
-{
-  description: "SSLException instead of failure to handshake",
-  bug: 3045163,
-  name: "libcore.javax.net.ssl.SSLEngineTest#test_SSLEngine_setEnableSessionCreation_server"
-},
-{
-  description: "SSLHandshakeException instead of failure to handshake",
-  bug: 3045163,
-  name: "libcore.javax.net.ssl.SSLEngineTest#test_SSLEngine_setUseClientMode"
-},
-{
-  description: "method test fails once in a while. Cannot be sure that exception is thrown in every test execution.",
-  bug: 3403706,
-  name: "libcore.sqlite.OldDatabaseTest#testBusy_handler"
-},
-{
-  description: "Database does not lock values",
-  bug: 3403706,
-  name: "libcore.sqlite.OldDatabaseTest#testBusy_timeout"
-},
-{
-  description: "Returns wrong number for updates: returns value > 1 for select.",
-  bug: 3403706,
-  name: "libcore.sqlite.OldDatabaseTest#testChanges"
-},
-{
-  description: "Aggregation function not called",
-  bug: 3403706,
-  name: "libcore.sqlite.OldDatabaseTest#testCreate_aggregate"
-},
-{
-  description: "Reason for failure unknown: Database should be locked. Specification of interrupt is scarce.",
-  result: EXEC_FAILED,
-  name: "libcore.sqlite.OldDatabaseTest#testInterrupt"
-},
-{
-  description: "not supported",
-  bug: 3403706,
-  name: "libcore.sqlite.OldDatabaseTest#testOpen_blob"
-},
-{
-  description: "Callback never made for authorization. Results of private table are returned without further checks.",
-  bug: 3403706,
-  name: "libcore.sqlite.OldDatabaseTest#testSet_authorizer"
-},
-{
-  description: "ASCII encoding does not work: a UTF encoded val is returned. Spec is not sufficient. Might be that test impl is wrong or String constructor for the ASCII encoding.",
-  bug: 3403706,
-  name: "libcore.sqlite.OldDatabaseTest#testSet_encoding"
-},
-{
-  description: "db.open_blob is not supported.",
-  bug: 3403706,
-  name: "libcore.sqlite.OldBlobTest#testBlob"
-},
-{
-  description: "Wrong value is returned in case of a prepared statement to which a '*' bound",
-  bug: 3403706,
-  name: "libcore.sqlite.OldStmtTest#testColumn_count"
-},
-{
-  description: "ZeroBlob not supported",
-  bug: 3403706,
-  name: "libcore.sqlite.OldFunctionContextTest#testSet_result_zeroblob"
-},
-{
-  description: "SQLite test fail",
-  bug: 3403706,
-  names: [
-    "libcore.sqlite.OldDatabaseTest#testGet_tableString",
-    "libcore.sqlite.OldDatabaseTest#testGet_tableStringStringArrayTableResult",
-    "libcore.sqlite.OldStmtTest#testColumn_type"
-  ]
 },
 {
   modes: [ "jvm" ],
@@ -1674,26 +1297,11 @@
   description: "Android's PKIX validation fails on many NIST PKIX tests",
   bug: 8030138,
   names: [
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidLongSerialNumberTest18",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidNegativeSerialNumberTest15",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidRevokedCATest2",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidRevokedEETest3",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidSeparateCertificateandCRLKeysTest20",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidSeparateCertificateandCRLKeysTest21",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidUnknownCRLEntryExtensionTest8",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_ValidSeparateCertificateandCRLKeysTest19",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDeltaCRLs_InvaliddeltaCRLTest3",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testDeltaCRLs_InvaliddeltaCRLTest4",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDeltaCRLs_InvaliddeltaCRLTest6",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDeltaCRLs_InvaliddeltaCRLTest9",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidIDPwithindirectCRLTest23",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidcRLIssuerTest34",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvaliddistributionPointTest2",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvaliddistributionPointTest6",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidonlySomeReasonsTest15",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidonlySomeReasonsTest16",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidonlySomeReasonsTest20",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidonlySomeReasonsTest21",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDeltaCRLs_ValiddeltaCRLTest5",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_ValidIDPwithindirectCRLTest24",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_ValidIDPwithindirectCRLTest25",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_ValidcRLIssuerTest28",
@@ -1702,9 +1310,200 @@
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_ValidcRLIssuerTest33",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testKeyUsage_ValidSelfIssuedDNnameConstraintsTest19",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testVerifyingNameChaining_ValidRFC3280OptionalAttributeTypesTest8",
-    "libcore.java.security.cert.X509CertificateNistPkitsTest#testVerifyingPathswithSelfIssuedCertificates_InvalidBasicSelfIssuedOldWithNewTest2",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testVerifyingPathswithSelfIssuedCertificates_ValidBasicSelfIssuedCRLSigningKeyTest6",
     "libcore.java.security.cert.X509CertificateNistPkitsTest#testVerifyingPathswithSelfIssuedCertificates_ValidBasicSelfIssuedNewWithOldTest4"
+  ]
+},
+{
+  description: "Known failure in MathTest 1^NAN should be NAN",
+  bug: 11669804,
+  name: "org.apache.harmony.tests.java.lang.MathTest#test_powDD"
+},
+{
+  description: "Known failures in PropertiesTest: We don't deal with comments in store()",
+  bug: 11686302,
+  names: [
+    "org.apache.harmony.tests.java.util.PropertiesTest#testStore_scenario0",
+    "org.apache.harmony.tests.java.util.PropertiesTest#testStore_scenario1",
+    "org.apache.harmony.tests.java.util.PropertiesTest#testStore_scenario2",
+    "org.apache.harmony.tests.java.util.PropertiesTest#testStore_scenario3",
+    "org.apache.harmony.tests.java.util.PropertiesTest#testStore_scenario9",
+    "org.apache.harmony.tests.java.util.PropertiesTest#testStore_scenario11"
+  ]
+},
+{
+  description: "Known failures in URLTest and URLDecoderTest",
+  bug: 11686814,
+  names: [
+    "org.apache.harmony.tests.java.net.URLTest#test_ConstructorLjava_net_URLLjava_lang_String",
+    "org.apache.harmony.tests.java.net.URLTest#test_sameFileLjava_net_URL",
+    "org.apache.harmony.tests.java.net.URLDecoderTest#test_decodeLjava_lang_String_Ljava_lang_String"
+  ]
+},
+{
+  description: "ScannerParseLargeFileBenchmark can cause a failure due to a timeout",
+  bug: 14865710,
+  name: "org.apache.harmony.tests.java.util.ScannerParseLargeFileBenchmarkTest"
+},
+{
+  description: "external/apache-harmony tests for java.sql are broken for various reasons. java.sql is not a high enough priority to fix.",
+  bug: 17342415,
+  names: [
+    "com.android.org.apache.harmony.sql.tests.java.sql.DataTruncationTest#testGetDataSize",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DataTruncationTest#testGetIndex",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DataTruncationTest#testGetParameter",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DataTruncationTest#testGetRead",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DataTruncationTest#testGetTransferSize",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DataTruncationTest#testDataTruncationintbooleanbooleanintint",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DateTest#test_valueOf_IllegalArgumentException",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testDeregisterDriver",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testGetConnectionString",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testGetConnectionStringProperties",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testGetConnectionStringStringString",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testGetDriver",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testGetDrivers",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testGetLogStream",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testGetLogWriter",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testGetLoginTimeout",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testPrintln",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testRegisterDriver",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testSetLogStream",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testSetLogWriter",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#testSetLoginTimeout",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#test_getConnection_LStringLProperties",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#test_initClass",
+    "com.android.org.apache.harmony.sql.tests.java.sql.DriverManagerTest#test_registerDriver_MultiTimes",
+    "com.android.org.apache.harmony.sql.tests.java.sql.TimestampTest#testCompareToDate",
+    "com.android.org.apache.harmony.sql.tests.java.sql.TimestampTest#testOverridingTimestamp"
+  ]
+},
+{
+  description: "java.util.logging: Android introduced config fallback behavior in LogManager.readConfiguration()",
+  bug: 13882147,
+  names: [
+    "com.android.org.apache.harmony.logging.tests.java.util.logging.LogManagerTest#testNotExistConfigFile",
+    "com.android.org.apache.harmony.logging.tests.java.util.logging.LoggerTest#testGetLogger_Empty",
+    "com.android.org.apache.harmony.logging.tests.java.util.logging.LoggerTest#testGetLogger_Null",
+    "com.android.org.apache.harmony.logging.tests.java.util.logging.LoggerTest#testGetLoggerWithRes_InvalidRes",
+    "com.android.org.apache.harmony.logging.tests.java.util.logging.LoggerTest#testGetLoggerWithRes_Empty"
+  ]
+},
+{
+  description: "java.util.logging: Android's user.home system property cannot be cleared",
+  bug: 13882147,
+  names: [
+    "com.android.org.apache.harmony.logging.tests.java.util.logging.FileHandlerTest#testConstructor_NoUsrHome",
+    "com.android.org.apache.harmony.logging.tests.java.util.logging.FileHandlerTest#testConstructor_NoTmpDir_NoUsrHome"
+  ]
+},
+{
+  description: "java.util.logging: Android's user.home system property points to root (/) dir",
+  bug: 13882147,
+  name: "com.android.org.apache.harmony.logging.tests.java.util.logging.FileHandlerTest#testConstructor_NoTmpDir"
+},
+{
+  description: "java.util.logging: The defaults for FileHandler don't work on Android because they try to write to the read-only user.home dir",
+  bug: 13882147,
+  name: "com.android.org.apache.harmony.logging.tests.java.util.logging.FileHandlerTest#testDefaultValue"
+},
+{
+  description: "java.util.logging: Android's classes have been stubbed in places.",
+  bug: 13882147,
+  names: [
+    "com.android.org.apache.harmony.logging.tests.java.util.logging.LogManagerTest#testGetLoggingMXBean"
+  ]
+},
+{
+  description: "java.util.logging: the serialized form references org.apache not com.android.org.apache",
+  bug: 13882147,
+  name: "com.android.org.apache.harmony.logging.tests.java.util.logging.LevelTest#testSerializationCompatibility"
+},
+{
+  description: "java.util.logging: Tests that require java.util.logging code changes to fix.",
+  bug: 13882147,
+  names: [
+    "com.android.org.apache.harmony.logging.tests.java.util.logging.SocketHandlerTest#testConstructor_NoProperties",
+    "com.android.org.apache.harmony.logging.tests.java.util.logging.XMLFormatterTest#test_TestFileHandlerClass_constructor"
+  ]
+},
+{
+  description: "java.util.beans: the harmony tests were broken by Android commit 19a270e90b1e992c1f6639f355ae13564c2f3a6a",
+  bug: 17394106,
+  names: [
+    "com.android.org.apache.harmony.beans.tests.java.beans.PropertyChangeSupportTest#testSerialization",
+    "com.android.org.apache.harmony.beans.tests.java.beans.PropertyChangeSupportTest#testGetPropertyChangeListener_String_Normal",
+    "com.android.org.apache.harmony.beans.tests.java.beans.PropertyChangeSupportTest#testAddPropertyChangeListener_PropertyChangeListener_String_Normal",
+    "com.android.org.apache.harmony.beans.tests.java.beans.PropertyChangeSupportTest#testAddPropertyChangeListener_PropertyChangeListener_Normal"
+  ]
+},
+{
+  description: "java.util.beans: the serialized form references org.apache not com.android.org.apache",
+  bug: 17394106,
+  names: [
+    "com.android.org.apache.harmony.beans.tests.java.beans.PropertyChangeSupportTest#testSerializationCompatibility"
+  ]
+},
+{
+  description: "Known precision issue in DecimalFormat",
+  bug: 17656132,
+  names: [
+    "org.apache.harmony.tests.java.text.DecimalFormatTest#test_formatDouble_bug17656132",
+    "org.apache.harmony.tests.java.text.DecimalFormatTest#test_formatDouble_roundingProblemCases"
+  ]
+},
+{
+  description: "Known failure in GregorianCalendarTest",
+  bug: 12778197,
+  name: "org.apache.harmony.tests.java.util.GregorianCalendarTest#test_computeTime"
+},
+{
+  description: "SpdyConnection issue https://github.com/square/okhttp/issues/644 crashes the test app. Android does not provide SPDY/HTTP_2 connections by default so have been suppressed.",
+  bug: 14462336,
+  names: [
+    "com.squareup.okhttp.ConnectionPoolTest",
+    "com.squareup.okhttp.internal.spdy.SpdyConnectionTest",
+    "com.squareup.okhttp.internal.http.HttpOverHttp20Draft09Test",
+    "com.squareup.okhttp.internal.http.HttpOverSpdy3Test",
+    "com.squareup.okhttp.internal.http.URLConnectionTest#npnSetsProtocolHeader_SPDY_3",
+    "com.squareup.okhttp.internal.http.URLConnectionTest#npnSetsProtocolHeader_HTTP_2",
+    "com.squareup.okhttp.internal.http.URLConnectionTest#zeroLengthPost_SPDY_3",
+    "com.squareup.okhttp.internal.http.URLConnectionTest#zeroLengthPost_HTTP_2",
+    "com.squareup.okhttp.internal.http.URLConnectionTest#zeroLengthPut_SPDY_3",
+    "com.squareup.okhttp.internal.http.URLConnectionTest#zeroLengthPut_HTTP_2"
+  ]
+},
+{
+  description: "Some OkHttp tests were written before the introduction of TLS_FALLBACK_SCSV and have only been fixed for APIs used by Android",
+  bug: 17962997,
+  names: [
+    "com.squareup.okhttp.SyncApiTest#recoverFromTlsHandshakeFailure",
+    "com.squareup.okhttp.AsyncApiTest#recoverFromTlsHandshakeFailure"
+  ]
+},
+{
+  description: "JavaApiConverterTest#createOkResponse_fromJavaHttpsUrlConnection works independently but fails when run with some other test(s).",
+  bug: 17962997,
+  name: "com.squareup.okhttp.internal.http.JavaApiConverterTest#createOkResponse_fromJavaHttpsUrlConnection"
+},
+{
+  description: "Okhttp test hardcodes the TLS version expected.",
+  bug: 14462336,
+  names: [
+    "com.squareup.okhttp.internal.http.URLConnectionTest#sslFallbackNotUsedWhenRecycledConnectionFails"
+  ]
+},
+{
+  description: "The test relies on SimpleDateFormat zzz producing GMT not GMT+00:00 as it does on Android. Android issue 66136.",
+  bug: 14462336,
+  names: [
+    "com.squareup.okhttp.internal.http.HttpResponseCacheTest#setIfModifiedSince"
+  ]
+},
+{
+  description: "libcore.java.text.DecimalFormatSymbolsTest#test_getInstance_unknown_or_invalid_locale assumes fallback to locale other than en_US_POSIX.",
+  bug: 17374604,
+  names: [
+    "libcore.java.text.DecimalFormatSymbolsTest#test_getInstance_unknown_or_invalid_locale"
   ]
 }
 ]

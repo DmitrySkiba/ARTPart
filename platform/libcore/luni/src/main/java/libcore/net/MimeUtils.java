@@ -49,18 +49,18 @@ public final class MimeUtils {
 
         add("application/andrew-inset", "ez");
         add("application/dsptype", "tsp");
-        add("application/futuresplash", "spl");
         add("application/hta", "hta");
         add("application/mac-binhex40", "hqx");
-        add("application/mac-compactpro", "cpt");
         add("application/mathematica", "nb");
         add("application/msaccess", "mdb");
         add("application/oda", "oda");
         add("application/ogg", "ogg");
+        add("application/ogg", "oga");
         add("application/pdf", "pdf");
         add("application/pgp-keys", "key");
         add("application/pgp-signature", "pgp");
         add("application/pics-rules", "prf");
+        add("application/pkix-cert", "cer");
         add("application/rar", "rar");
         add("application/rdf+xml", "rdf");
         add("application/rss+xml", "rss");
@@ -132,14 +132,15 @@ public final class MimeUtils {
         add("application/x-dms", "dms");
         add("application/x-doom", "wad");
         add("application/x-dvi", "dvi");
-        add("application/x-flac", "flac");
         add("application/x-font", "pfa");
         add("application/x-font", "pfb");
         add("application/x-font", "gsf");
         add("application/x-font", "pcf");
         add("application/x-font", "pcf.Z");
         add("application/x-freemind", "mm");
+        // application/futuresplash isn't IANA, so application/x-futuresplash should come first.
         add("application/x-futuresplash", "spl");
+        add("application/futuresplash", "spl");
         add("application/x-gnumeric", "gnumeric");
         add("application/x-go-sgf", "sgf");
         add("application/x-graphing-calculator", "gcf");
@@ -182,6 +183,7 @@ public final class MimeUtils {
         add("application/x-nwc", "nwc");
         add("application/x-object", "o");
         add("application/x-oz-application", "oza");
+        add("application/x-pem-file", "pem");
         add("application/x-pkcs12", "p12");
         add("application/x-pkcs12", "pfx");
         add("application/x-pkcs7-certreqresp", "p7r");
@@ -205,15 +207,24 @@ public final class MimeUtils {
         add("application/x-webarchive-xml", "webarchivexml");
         add("application/x-x509-ca-cert", "crt");
         add("application/x-x509-user-cert", "crt");
+        add("application/x-x509-server-cert", "crt");
         add("application/x-xcf", "xcf");
         add("application/x-xfig", "fig");
         add("application/xhtml+xml", "xhtml");
         add("audio/3gpp", "3gpp");
+        add("audio/aac", "aac");
+        add("audio/aac-adts", "aac");
         add("audio/amr", "amr");
+        add("audio/amr-wb", "awb");
         add("audio/basic", "snd");
+        add("audio/flac", "flac");
+        add("application/x-flac", "flac");
+        add("audio/imelody", "imy");
         add("audio/midi", "mid");
         add("audio/midi", "midi");
+        add("audio/midi", "ota");
         add("audio/midi", "kar");
+        add("audio/midi", "rtttl");
         add("audio/midi", "xmf");
         add("audio/mobile-xmf", "mxmf");
         // add ".mp3" first so it will be the default for guessExtensionFromMimeType
@@ -228,6 +239,7 @@ public final class MimeUtils {
         add("audio/x-aiff", "aiff");
         add("audio/x-aiff", "aifc");
         add("audio/x-gsm", "gsm");
+        add("audio/x-matroska", "mka");
         add("audio/x-mpegurl", "m3u");
         add("audio/x-ms-wma", "wma");
         add("audio/x-ms-wax", "wax");
@@ -238,8 +250,12 @@ public final class MimeUtils {
         add("audio/x-scpls", "pls");
         add("audio/x-sd2", "sd2");
         add("audio/x-wav", "wav");
+        // image/bmp isn't IANA, so image/x-ms-bmp should come first.
+        add("image/x-ms-bmp", "bmp");
         add("image/bmp", "bmp");
         add("image/gif", "gif");
+        // image/ico isn't IANA, so image/x-icon should come first.
+        add("image/x-icon", "ico");
         add("image/ico", "cur");
         add("image/ico", "ico");
         add("image/ief", "ief");
@@ -255,15 +271,14 @@ public final class MimeUtils {
         add("image/vnd.djvu", "djvu");
         add("image/vnd.djvu", "djv");
         add("image/vnd.wap.wbmp", "wbmp");
+        add("image/webp", "webp");
         add("image/x-cmu-raster", "ras");
         add("image/x-coreldraw", "cdr");
         add("image/x-coreldrawpattern", "pat");
         add("image/x-coreldrawtemplate", "cdt");
         add("image/x-corelphotopaint", "cpt");
-        add("image/x-icon", "ico");
         add("image/x-jg", "art");
         add("image/x-jng", "jng");
-        add("image/x-ms-bmp", "bmp");
         add("image/x-photoshop", "psd");
         add("image/x-portable-anymap", "pnm");
         add("image/x-portable-bitmap", "pbm");
@@ -295,7 +310,6 @@ public final class MimeUtils {
         add("text/plain", "po");     // reserve "pot" for vnd.ms-powerpoint
         add("text/richtext", "rtx");
         add("text/rtf", "rtf");
-        add("text/texmacs", "ts");
         add("text/text", "phps");
         add("text/tab-separated-values", "tsv");
         add("text/xml", "xml");
@@ -331,12 +345,15 @@ public final class MimeUtils {
         add("text/x-vcard", "vcf");
         add("video/3gpp", "3gpp");
         add("video/3gpp", "3gp");
-        add("video/3gpp", "3g2");
+        add("video/3gpp2", "3gpp2");
+        add("video/3gpp2", "3g2");
+        add("video/avi", "avi");
         add("video/dl", "dl");
         add("video/dv", "dif");
         add("video/dv", "dv");
         add("video/fli", "fli");
         add("video/m4v", "m4v");
+        add("video/mp2ts", "ts");
         add("video/mpeg", "mpeg");
         add("video/mpeg", "mpg");
         add("video/mpeg", "mpe");
@@ -345,8 +362,10 @@ public final class MimeUtils {
         add("video/quicktime", "qt");
         add("video/quicktime", "mov");
         add("video/vnd.mpegurl", "mxu");
+        add("video/webm", "webm");
         add("video/x-la-asf", "lsf");
         add("video/x-la-asf", "lsx");
+        add("video/x-matroska", "mkv");
         add("video/x-mng", "mng");
         add("video/x-ms-asf", "asf");
         add("video/x-ms-asf", "asx");
@@ -354,7 +373,6 @@ public final class MimeUtils {
         add("video/x-ms-wmv", "wmv");
         add("video/x-ms-wmx", "wmx");
         add("video/x-ms-wvx", "wvx");
-        add("video/x-msvideo", "avi");
         add("video/x-sgi-movie", "movie");
         add("video/x-webex", "wrf");
         add("x-conference/x-cooltalk", "ice");
@@ -363,18 +381,17 @@ public final class MimeUtils {
     }
 
     private static void add(String mimeType, String extension) {
-        //
-        // if we have an existing x --> y mapping, we do not want to
-        // override it with another mapping x --> ?
-        // this is mostly because of the way the mime-type map below
-        // is constructed (if a mime type maps to several extensions
-        // the first extension is considered the most popular and is
-        // added first; we do not want to overwrite it later).
-        //
+        // If we have an existing x -> y mapping, we do not want to
+        // override it with another mapping x -> y2.
+        // If a mime type maps to several extensions
+        // the first extension added is considered the most popular
+        // so we do not want to overwrite it later.
         if (!mimeTypeToExtensionMap.containsKey(mimeType)) {
             mimeTypeToExtensionMap.put(mimeType, extension);
         }
-        extensionToMimeTypeMap.put(extension, mimeType);
+        if (!extensionToMimeTypeMap.containsKey(extension)) {
+            extensionToMimeTypeMap.put(extension, mimeType);
+        }
     }
 
     private static InputStream getContentTypesPropertiesStream() {

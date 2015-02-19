@@ -17,6 +17,10 @@
     'common.gypi',
   ],
 
+  'variables': {
+    'local_root': '<(platform_root)/external/zlib'
+  },
+
   'targets': [
     {
       'target_name': 'zlib<(any_variant)', # TODO rename to libz
@@ -27,6 +31,9 @@
           'type': 'none',
 
           'direct_dependent_settings': {
+            'include_dirs': [
+              '<(local_root)/include'
+            ],
             'link_settings': {
               'libraries': [
                 '$(SDKROOT)/usr/lib/libz.dylib',

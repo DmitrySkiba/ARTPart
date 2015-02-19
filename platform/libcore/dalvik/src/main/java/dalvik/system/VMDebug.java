@@ -164,9 +164,6 @@ public final class VMDebug {
     public static void startMethodTracing(String traceFileName, int bufferSize, int flags, boolean samplingEnabled, int intervalUs) {
         startMethodTracingFilename(traceFileName, checkBufferSize(bufferSize), flags, samplingEnabled, intervalUs);
     }
-    public static void startMethodTracing(String traceFileName, int bufferSize, int flags) {
-        startMethodTracing(traceFileName, bufferSize, flags, false, 0);
-    }
 
     /**
      * Like startMethodTracing(String, int, int), but taking an already-opened
@@ -178,9 +175,6 @@ public final class VMDebug {
             throw new NullPointerException("fd == null");
         }
         startMethodTracingFd(traceFileName, fd, checkBufferSize(bufferSize), flags, samplingEnabled, intervalUs);
-    }
-    public static void startMethodTracing(String traceFileName, FileDescriptor fd, int bufferSize, int flags) {
-        startMethodTracing(traceFileName, fd, bufferSize, flags, false, 0);
     }
 
     /**

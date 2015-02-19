@@ -21,11 +21,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
@@ -33,6 +39,8 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import junit.framework.TestCase;
+
+import tests.support.resource.Support_Resources;
 
 public final class ZipFileTest extends TestCase {
     /**
@@ -160,7 +168,7 @@ public final class ZipFileTest extends TestCase {
         }
 
         assertEquals(expectedLength, count);
-
+        zip.close();
     }
 
     public void testInflatingStreamsRequiringZipRefill() throws IOException {
@@ -218,21 +226,23 @@ public final class ZipFileTest extends TestCase {
         byte[] writeBuffer = new byte[8192];
         Random random = new Random();
 
-        ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(result)));
-        for (int entry = 0; entry < entryCount; ++entry) {
-            ZipEntry ze = new ZipEntry(Integer.toHexString(entry));
-            out.putNextEntry(ze);
+        ZipOutputStream out = createZipOutputStream(result);
+        try {
+            for (int entry = 0; entry < entryCount; ++entry) {
+                ZipEntry ze = new ZipEntry(Integer.toHexString(entry));
+                out.putNextEntry(ze);
 
-            for (int i = 0; i < entrySize; i += writeBuffer.length) {
-                random.nextBytes(writeBuffer);
-                int byteCount = Math.min(writeBuffer.length, entrySize - i);
-                out.write(writeBuffer, 0, byteCount);
+                for (int i = 0; i < entrySize; i += writeBuffer.length) {
+                    random.nextBytes(writeBuffer);
+                    int byteCount = Math.min(writeBuffer.length, entrySize - i);
+                    out.write(writeBuffer, 0, byteCount);
+                }
+
+                out.closeEntry();
             }
-
-            out.closeEntry();
+        } finally {
+            out.close();
         }
-
-        out.close();
         return result;
     }
 
@@ -467,5 +477,31 @@ public final class ZipFileTest extends TestCase {
         out.write(-1);
         out.closeEntry();
         out.close();
+    }
+
+    /**
+     * RI does not allow reading of an empty zip using a {@link ZipFile}.
+     */
+    public void testConstructorFailsWhenReadingEmptyZipArchive() throws IOException {
+
+        File resources = Support_Resources.createTempFolder();
+        File emptyZip = Support_Resources.copyFile(
+                resources, "java/util/zip", "EmptyArchive.zip");
+
+        try {
+            // The following should fail with an exception but if it doesn't then we need to clean
+            // up the resource so we need a reference to it.
+            ZipFile zipFile = new ZipFile(emptyZip);
+
+            // Clean up the resource.
+            try {
+                zipFile.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+            fail();
+        } catch (ZipException expected) {
+            // expected
+        }
     }
 }

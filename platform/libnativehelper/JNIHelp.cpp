@@ -16,8 +16,6 @@
 
 #define LOG_TAG "JNIHelp"
 
-#define LIBCORE_CPP_JNI_HELPERS
-
 #include "JniConstants.h"
 #include "JNIHelp.h"
 #include "ALog-priv.h"
@@ -174,16 +172,16 @@ static bool getStackTrace(C_JNIEnv* env, jthrowable exception, std::string& resu
         return false;
     }
 
-    jobject printWriter =
-            (*env)->NewObject(e, printWriterClass.get(), printWriterCtor, stringWriter.get());
-    if (printWriter == NULL) {
+    scoped_local_ref<jobject> printWriter(env,
+            (*env)->NewObject(e, printWriterClass.get(), printWriterCtor, stringWriter.get()));
+    if (printWriter.get() == NULL) {
         return false;
     }
 
     scoped_local_ref<jclass> exceptionClass(env, (*env)->GetObjectClass(e, exception)); // can't fail
     jmethodID printStackTraceMethod =
             (*env)->GetMethodID(e, exceptionClass.get(), "printStackTrace", "(Ljava/io/PrintWriter;)V");
-    (*env)->CallVoidMethod(e, exception, printStackTraceMethod, printWriter);
+    (*env)->CallVoidMethod(e, exception, printStackTraceMethod, printWriter.get());
 
     if ((*env)->ExceptionCheck(e)) {
         return false;
@@ -257,12 +255,7 @@ int jniThrowIOException(C_JNIEnv* env, int errnum) {
     return jniThrowException(env, "java/io/IOException", message);
 }
 
-void jniLogException(C_JNIEnv* env, int priority, const char* tag, jthrowable exception) {
-    std::string trace(jniGetStackTrace(env, exception));
-    __android_log_write(priority, tag, trace.c_str());
-}
-
-extern "C" std::string jniGetStackTrace(C_JNIEnv* env, jthrowable exception) {
+static std::string jniGetStackTrace(C_JNIEnv* env, jthrowable exception) {
     JNIEnv* e = reinterpret_cast<JNIEnv*>(env);
 
     scoped_local_ref<jthrowable> currentException(env, (*env)->ExceptionOccurred(e));
@@ -290,39 +283,48 @@ extern "C" std::string jniGetStackTrace(C_JNIEnv* env, jthrowable exception) {
     return trace;
 }
 
+void jniLogException(C_JNIEnv* env, int priority, const char* tag, jthrowable exception) {
+    std::string trace(jniGetStackTrace(env, exception));
+    __android_log_write(priority, tag, trace.c_str());
+}
+
 const char* jniStrError(int errnum, char* buf, size_t buflen) {
+#if __GLIBC__
     // Note: glibc has a nonstandard strerror_r that returns char* rather than POSIX's int.
     // char *strerror_r(int errnum, char *buf, size_t n);
-    char* ret = (char*) strerror_r(errnum, buf, buflen);
-    if (((int)ret) == 0) {
-        // POSIX strerror_r, success
-        return buf;
-    } else if (((int)ret) == -1) {
-        // POSIX strerror_r, failure
-        // (Strictly, POSIX only guarantees a value other than 0. The safest
+    return strerror_r(errnum, buf, buflen);
+#else
+    int rc = strerror_r(errnum, buf, buflen);
+    if (rc != 0) {
+        // (POSIX only guarantees a value other than 0. The safest
         // way to implement this function is to use C++ and overload on the
-        // type of strerror_r to accurately distinguish GNU from POSIX. But
-        // realistic implementations will always return -1.)
+        // type of strerror_r to accurately distinguish GNU from POSIX.)
         snprintf(buf, buflen, "errno %d", errnum);
-        return buf;
-    } else {
-        // glibc strerror_r returning a string
-        return ret;
     }
+    return buf;
+#endif
 }
 
 jobject jniCreateFileDescriptor(C_JNIEnv* env, int fd) {
     JNIEnv* e = reinterpret_cast<JNIEnv*>(env);
     static jmethodID ctor = e->GetMethodID(JniConstants::fileDescriptorClass, "<init>", "()V");
     jobject fileDescriptor = (*env)->NewObject(e, JniConstants::fileDescriptorClass, ctor);
-    jniSetFileDescriptorOfFD(env, fileDescriptor, fd);
+    // NOTE: NewObject ensures that an OutOfMemoryError will be seen by the Java
+    // caller if the alloc fails, so we just return NULL when that happens.
+    if (fileDescriptor != NULL)  {
+        jniSetFileDescriptorOfFD(env, fileDescriptor, fd);
+    }
     return fileDescriptor;
 }
 
 int jniGetFDFromFileDescriptor(C_JNIEnv* env, jobject fileDescriptor) {
     JNIEnv* e = reinterpret_cast<JNIEnv*>(env);
     static jfieldID fid = e->GetFieldID(JniConstants::fileDescriptorClass, "descriptor", "I");
-    return (*env)->GetIntField(e, fileDescriptor, fid);
+    if (fileDescriptor != NULL) {
+        return (*env)->GetIntField(e, fileDescriptor, fid);
+    } else {
+        return -1;
+    }
 }
 
 void jniSetFileDescriptorOfFD(C_JNIEnv* env, jobject fileDescriptor, int value) {
@@ -337,38 +339,3 @@ jobject jniGetReferent(C_JNIEnv* env, jobject ref) {
     return (*env)->CallObjectMethod(e, ref, get);
 }
 
-/*
- * DO NOT USE THIS FUNCTION
- *
- * Get a pointer to the elements of a non-movable array.
- *
- * The semantics are similar to GetDirectBufferAddress.  Specifically, the VM
- * guarantees that the array will not move, and the caller must ensure that
- * it does not continue to use the pointer after the object is collected.
- *
- * We currently use an illegal sequence that trips up CheckJNI when
- * the "forcecopy" mode is enabled.  We pass in a magic value to work
- * around the problem.
- *
- * Returns NULL if the array is movable.
- */
-#define kNoCopyMagic 0xd5aab57f     /* also in CheckJni.c */
-extern "C" jbyte* jniGetNonMovableArrayElements(C_JNIEnv* env, jarray arrayObj) {
-    JNIEnv* e = reinterpret_cast<JNIEnv*>(env);
-
-    jbyteArray byteArray = reinterpret_cast<jbyteArray>(arrayObj);
-
-    /*
-     * Normally the "isCopy" parameter is for a return value only, so the
-     * non-CheckJNI VM will ignore whatever we pass in.
-     */
-    uint32_t noCopy = kNoCopyMagic;
-    jbyte* result = (*env)->GetByteArrayElements(e, byteArray, reinterpret_cast<jboolean*>(&noCopy));
-
-    /*
-     * The non-CheckJNI implementation only cares about the array object,
-     * so we can replace the element pointer with the magic value.
-     */
-    (*env)->ReleaseByteArrayElements(e, byteArray, reinterpret_cast<jbyte*>(kNoCopyMagic), 0);
-    return result;
-}

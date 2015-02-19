@@ -16,7 +16,6 @@
  */
 package libcore.java.text;
 
-import dalvik.annotation.BrokenTest;
 import java.text.ChoiceFormat;
 import java.text.DecimalFormat;
 import java.text.FieldPosition;
@@ -50,10 +49,14 @@ public class OldNumberFormatTest extends TestCase {
 
         Locale arLocale = new Locale("ar", "AE");
         format = (DecimalFormat) NumberFormat.getIntegerInstance(arLocale);
-        assertEquals("#0;#0-", format.toPattern());
-        assertEquals("\u0666-", format.format(-6));
-        assertEquals(new Long(-36), format.parse("36-"));
-        assertEquals(new Long(-36), format.parseObject("36-"));
+        assertEquals("#,##0", format.toPattern());
+        assertEquals("\u0666\u0667", format.format(67));
+
+        assertEquals("\u200f-\u0666", format.format(-6));
+        assertEquals(-36L, format.parse("-36"));
+
+        // New Arabic formats do not support '-' to right of digits.
+        assertEquals(36L, format.parseObject("36-"));
         assertEquals(0, format.getMaximumFractionDigits());
         assertTrue(format.isParseIntegerOnly());
     }
@@ -729,7 +732,7 @@ public class OldNumberFormatTest extends TestCase {
                 + " instead of Integer.MIN_VALUE", result == 0);
     }
 
-    @BrokenTest("Fails in CTS, passes in CoreTestRunner")
+    // Broken Test: Fails in CTS, passes in CoreTestRunner
     public void test_parseLjava_lang_String() {
         NumberFormat nf1 = NumberFormat.getInstance();
         try {

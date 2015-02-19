@@ -18,6 +18,7 @@ package libcore.java.util.prefs;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.prefs.AbstractPreferences;
 import java.util.prefs.BackingStoreException;
@@ -27,11 +28,16 @@ import java.util.prefs.NodeChangeListener;
 import java.util.prefs.PreferenceChangeEvent;
 import java.util.prefs.PreferenceChangeListener;
 import java.util.prefs.Preferences;
+import java.util.prefs.PreferencesFactory;
+
 import junit.framework.TestCase;
+import libcore.io.IoUtils;
 
 public final class OldAbstractPreferencesTest extends TestCase {
 
     static final String nodeName = "mock";
+
+    private PreferencesFactory defaultFactory;
 
     AbstractPreferences pref;
     AbstractPreferences root;
@@ -40,14 +46,22 @@ public final class OldAbstractPreferencesTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
 
+        File tmpDir = IoUtils.createTemporaryDirectory("OldAbstractPreferencesTest");
+        defaultFactory = Preferences.setPreferencesFactory(
+                new PreferencesTest.TestPreferencesFactory(tmpDir.getAbsolutePath()));
+
         root = (AbstractPreferences) Preferences.userRoot();
-        for (String child : root.childrenNames()) {
-            root.node(child).removeNode();
-        }
-        root.clear();
+        assertEquals(0, root.childrenNames().length);
+        assertEquals(0, root.keys().length);
 
         parent = (AbstractPreferences) Preferences.userNodeForPackage(getClass());
         pref = (AbstractPreferences) parent.node(nodeName);
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        Preferences.setPreferencesFactory(defaultFactory);
+        super.tearDown();
     }
 
     public void testToString() {

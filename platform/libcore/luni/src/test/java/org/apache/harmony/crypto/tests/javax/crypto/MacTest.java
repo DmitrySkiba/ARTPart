@@ -27,26 +27,26 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.Security;
 import java.security.spec.PSSParameterSpec;
+import java.util.ArrayList;
 import java.util.Arrays;
-
 import javax.crypto.Mac;
 import javax.crypto.MacSpi;
 import javax.crypto.SecretKey;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.DHGenParameterSpec;
-
 import javax.crypto.spec.SecretKeySpec;
-
 import org.apache.harmony.crypto.tests.support.MyMacSpi;
 import org.apache.harmony.security.tests.support.SpiEngUtils;
-
 import junit.framework.TestCase;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
+import libcore.java.security.StandardNames;
+import libcore.javax.crypto.MockKey;
+import libcore.javax.crypto.MockKey2;
 
 /**
  * Tests for Mac class constructors and methods
@@ -71,7 +71,7 @@ public class MacTest extends TestCase {
     private static String[] validValues = new String[3];
 
     public static final String validAlgorithmsMac [] =
-        {"HmacSHA1", "HmacMD5", "HmacSHA256", "HmacSHA384", "HmacSHA512"};
+        {"HmacSHA1", "HmacMD5", "HmacSHA224", "HmacSHA256", "HmacSHA384", "HmacSHA512"};
 
 
     static {
@@ -90,20 +90,19 @@ public class MacTest extends TestCase {
         }
     }
 
-    private Mac [] createMacs() {
+    private Mac[] createMacs() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return null;
         }
-        try {
-            Mac m [] = new Mac[3];
-            m[0] = Mac.getInstance(defaultAlgorithm);
-            m[1] = Mac.getInstance(defaultAlgorithm, defaultProvider);
-            m[2] = Mac.getInstance(defaultAlgorithm, defaultProviderName);
-            return m;
-        } catch (Exception e) {
-            return null;
+        ArrayList<Mac> macList = new ArrayList<Mac>();
+        macList.add(Mac.getInstance(defaultAlgorithm));
+        macList.add(Mac.getInstance(defaultAlgorithm, defaultProvider));
+        macList.add(Mac.getInstance(defaultAlgorithm, defaultProviderName));
+        for (Provider p : Security.getProviders("Mac." + defaultAlgorithm)) {
+            macList.add(Mac.getInstance(defaultAlgorithm, p));
         }
+        return macList.toArray(new Mac[macList.size()]);
     }
 
     /**
@@ -356,9 +355,7 @@ public class MacTest extends TestCase {
      * throws ShotBufferException when outOffset  is negative or
      * outOffset >= output.length  or when given buffer is small
      */
-    public void testMac10() throws NoSuchAlgorithmException,
-            NoSuchProviderException, IllegalArgumentException,
-            IllegalStateException, InvalidKeyException {
+    public void testMac10() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -404,9 +401,7 @@ public class MacTest extends TestCase {
      * <code>doFinal()</code> methods Assertion: Mac result is stored in
      * output buffer
      */
-    public void testMac11() throws NoSuchAlgorithmException, NoSuchProviderException,
-            IllegalArgumentException, IllegalStateException,
-            InvalidKeyException, ShortBufferException {
+    public void testMac11() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -430,9 +425,7 @@ public class MacTest extends TestCase {
      * Test for <code>doFinal(byte[] input)</code> method
      * Assertion: update Mac and returns result
      */
-    public void testMac12() throws NoSuchAlgorithmException, NoSuchProviderException,
-            IllegalArgumentException, IllegalStateException,
-            InvalidKeyException  {
+    public void testMac12() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -447,15 +440,15 @@ public class MacTest extends TestCase {
             byte[] res1 = macs[i].doFinal();
             byte[] res2 = macs[i].doFinal();
             assertEquals("Results are not the same",
-                    IntegralToString.bytesToHexString(res1, false),
-                    IntegralToString.bytesToHexString(res2, false));
+                    Arrays.toString(res1),
+                    Arrays.toString(res2));
 
             res2 = macs[i].doFinal(upd);
             macs[i].update(upd);
             res1 = macs[i].doFinal();
             assertEquals("Results are not the same",
-                    IntegralToString.bytesToHexString(res1, false),
-                    IntegralToString.bytesToHexString(res2, false));
+                    Arrays.toString(res1),
+                    Arrays.toString(res2));
         }
     }
 
@@ -464,9 +457,7 @@ public class MacTest extends TestCase {
      * Assertion: throws IllegalArgumentException when offset or len is negative,
      * offset + len >= input.length
      */
-    public void testMac13() throws NoSuchAlgorithmException,
-            NoSuchProviderException, IllegalArgumentException, IllegalStateException,
-            InvalidKeyException {
+    public void testMac13() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -505,9 +496,7 @@ public class MacTest extends TestCase {
      * methods
      * Assertion: updates Mac
      */
-    public void testMac14() throws NoSuchAlgorithmException,
-            NoSuchProviderException, IllegalArgumentException, IllegalStateException,
-            InvalidKeyException {
+    public void testMac14() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -547,7 +536,7 @@ public class MacTest extends TestCase {
      * Test for <code>clone()</code> method
      * Assertion: returns Mac object or throws CloneNotSupportedException
      */
-    public void testMacClone() throws NoSuchAlgorithmException, CloneNotSupportedException {
+    public void testMacClone() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -572,9 +561,7 @@ public class MacTest extends TestCase {
      * Assertion: throws InvalidKeyException and InvalidAlgorithmParameterException
      * when parameters are not appropriate
      */
-    public void testInit() throws NoSuchAlgorithmException, NoSuchProviderException,
-            IllegalArgumentException, IllegalStateException, InvalidAlgorithmParameterException,
-            InvalidKeyException {
+    public void testInit() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -588,6 +575,7 @@ public class MacTest extends TestCase {
         SecretKeySpec sks1 = new SecretKeySpec(b, "RSA");
 
         for (int i = 0; i < macs.length; i++) {
+            macs[i].reset();
             macs[i].init(sks);
             try {
                 macs[i].init(sks1, algPSS);
@@ -621,9 +609,7 @@ public class MacTest extends TestCase {
      * methods
      * Assertion: processes Mac; if input is null then do nothing
      */
-    public void testUpdateByteBuffer01() throws NoSuchAlgorithmException, NoSuchProviderException,
-            IllegalArgumentException, IllegalStateException, InvalidAlgorithmParameterException,
-            InvalidKeyException {
+    public void testUpdateByteBuffer01() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -664,9 +650,7 @@ public class MacTest extends TestCase {
      * methods
      * Assertion: processes Mac
      */
-    public void testUpdateByteBuffer02() throws NoSuchAlgorithmException, NoSuchProviderException,
-            IllegalArgumentException, IllegalStateException, InvalidAlgorithmParameterException,
-            InvalidKeyException {
+    public void testUpdateByteBuffer02() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -699,7 +683,7 @@ public class MacTest extends TestCase {
      * Test for <code>clone()</code> method
      * Assertion: clone if provider is clo
      */
-    public void testClone()  {
+    public void testClone() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -720,7 +704,7 @@ public class MacTest extends TestCase {
      * Test for <code>getMacLength()</code> method
      * Assertion: return Mac length
      */
-    public void testGetMacLength() {
+    public void testGetMacLength() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -736,7 +720,7 @@ public class MacTest extends TestCase {
      * Test for <code>reset()</code> method
      * Assertion: return Mac length
      */
-    public void testReset() throws InvalidKeyException {
+    public void testReset() throws Exception {
         if (!DEFSupported) {
             fail(NotSupportedMsg);
             return;
@@ -781,15 +765,14 @@ public class MacTest extends TestCase {
         }
         MacSpi spi = new MyMacSpi();
         Mac mac = new myMac(spi, defaultProvider, defaultAlgorithm);
-        assertEquals("Incorrect algorithm", mac.getAlgorithm(),
-                defaultAlgorithm);
-        assertEquals("Incorrect provider", mac.getProvider(), defaultProvider);
+        assertEquals("Incorrect algorithm", defaultAlgorithm, mac.getAlgorithm());
+        assertEquals("Incorrect provider", defaultProvider, mac.getProvider());
         try {
             mac.init(null, null);
             fail("Exception should be thrown because init(..) uses incorrect parameters");
         } catch (Exception e) {
         }
-        assertEquals("Invalid mac length", mac.getMacLength(), 0);
+        assertEquals("Invalid mac length", 0, mac.getMacLength());
 
         mac = new myMac(null, null, null);
         assertNull("Algorithm must be null", mac.getAlgorithm());
@@ -889,6 +872,127 @@ public class MacTest extends TestCase {
     class Mock_Mac extends Mac {
         protected Mock_Mac(MacSpi arg0, Provider arg1, String arg2) {
             super(arg0, arg1, arg2);
+        }
+    }
+
+    private static abstract class MockProvider extends Provider {
+        public MockProvider(String name) {
+            super(name, 1.0, "Mock provider used for testing");
+            setup();
+        }
+
+        public abstract void setup();
+    }
+
+    public void testMac_getInstance_SuppliedProviderNotRegistered_Success() throws Exception {
+        Provider mockProvider = new MockProvider("MockProvider") {
+            public void setup() {
+                put("Mac.FOO", MockMacSpi.AllKeyTypes.class.getName());
+            }
+        };
+
+        {
+            Mac s = Mac.getInstance("FOO", mockProvider);
+            s.init(new MockKey());
+            assertEquals(mockProvider, s.getProvider());
+        }
+    }
+
+    public void testMac_getInstance_OnlyUsesSpecifiedProvider_SameNameAndClass_Success()
+            throws Exception {
+        Provider mockProvider = new MockProvider("MockProvider") {
+            public void setup() {
+                put("Mac.FOO", MockMacSpi.AllKeyTypes.class.getName());
+            }
+        };
+
+        Security.addProvider(mockProvider);
+        try {
+            {
+                Provider mockProvider2 = new MockProvider("MockProvider") {
+                    public void setup() {
+                        put("Mac.FOO", MockMacSpi.AllKeyTypes.class.getName());
+                    }
+                };
+                Mac s = Mac.getInstance("FOO", mockProvider2);
+                assertEquals(mockProvider2, s.getProvider());
+            }
+        } finally {
+            Security.removeProvider(mockProvider.getName());
+        }
+    }
+
+    public void testMac_getInstance_DelayedInitialization_KeyType() throws Exception {
+        Provider mockProviderSpecific = new MockProvider("MockProviderSpecific") {
+            public void setup() {
+                put("Mac.FOO", MockMacSpi.SpecificKeyTypes.class.getName());
+                put("Mac.FOO SupportedKeyClasses", MockKey.class.getName());
+            }
+        };
+        Provider mockProviderSpecific2 = new MockProvider("MockProviderSpecific2") {
+            public void setup() {
+                put("Mac.FOO", MockMacSpi.SpecificKeyTypes2.class.getName());
+                put("Mac.FOO SupportedKeyClasses", MockKey2.class.getName());
+            }
+        };
+        Provider mockProviderAll = new MockProvider("MockProviderAll") {
+            public void setup() {
+                put("Mac.FOO", MockMacSpi.AllKeyTypes.class.getName());
+            }
+        };
+
+        Security.addProvider(mockProviderSpecific);
+        Security.addProvider(mockProviderSpecific2);
+        Security.addProvider(mockProviderAll);
+
+        try {
+            {
+                Mac s = Mac.getInstance("FOO");
+                s.init(new MockKey());
+                assertEquals(mockProviderSpecific, s.getProvider());
+
+                try {
+                    s.init(new MockKey2());
+                    assertEquals(mockProviderSpecific2, s.getProvider());
+                    if (StandardNames.IS_RI) {
+                        fail("RI was broken before; fix tests now that it works!");
+                    }
+                } catch (InvalidKeyException e) {
+                    if (!StandardNames.IS_RI) {
+                        fail("Non-RI should select the right provider");
+                    }
+                }
+            }
+
+            {
+                Mac s = Mac.getInstance("FOO");
+                s.init(new PrivateKey() {
+                    @Override
+                    public String getAlgorithm() {
+                        throw new UnsupportedOperationException("not implemented");
+                    }
+
+                    @Override
+                    public String getFormat() {
+                        throw new UnsupportedOperationException("not implemented");
+                    }
+
+                    @Override
+                    public byte[] getEncoded() {
+                        throw new UnsupportedOperationException("not implemented");
+                    }
+                });
+                assertEquals(mockProviderAll, s.getProvider());
+            }
+
+            {
+                Mac s = Mac.getInstance("FOO");
+                assertEquals(mockProviderSpecific, s.getProvider());
+            }
+        } finally {
+            Security.removeProvider(mockProviderSpecific.getName());
+            Security.removeProvider(mockProviderSpecific2.getName());
+            Security.removeProvider(mockProviderAll.getName());
         }
     }
 

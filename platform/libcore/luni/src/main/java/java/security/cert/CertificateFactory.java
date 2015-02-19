@@ -128,7 +128,8 @@ public class CertificateFactory {
 
     /**
      * Creates a new {@code CertificateFactory} instance from the specified
-     * provider that provides the requested certificate type.
+     * provider that provides the requested certificate type. The
+     * {@code provider} supplied does not have to be registered.
      *
      * @param type
      *            the certificate type.
@@ -280,7 +281,7 @@ public class CertificateFactory {
      * @param inStream
      *            the stream from where data is read to create the CRL.
      * @return an initialized CRL.
-     * @exception CRLException
+     * @throws CRLException
      *                if parsing problems are detected.
      */
     public final CRL generateCRL(InputStream inStream) throws CRLException {
@@ -294,7 +295,7 @@ public class CertificateFactory {
      * @param inStream
      *            the stream from which the data is read to create the CRLs.
      * @return an initialized collection of CRLs.
-     * @exception CRLException
+     * @throws CRLException
      *                if parsing problems are detected.
      */
     public final Collection<? extends CRL> generateCRLs(InputStream inStream)

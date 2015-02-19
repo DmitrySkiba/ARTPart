@@ -132,7 +132,8 @@ public abstract class MessageDigest extends MessageDigestSpi {
 
     /**
      * Returns a new instance of {@code MessageDigest} that utilizes the
-     * specified algorithm from the specified provider.
+     * specified algorithm from the specified provider. The
+     * {@code provider} supplied does not have to be registered.
      *
      * @param algorithm
      *            the name of the algorithm to use
@@ -302,12 +303,12 @@ public abstract class MessageDigest extends MessageDigestSpi {
         if (digesta.length != digestb.length) {
             return false;
         }
+        // Perform a constant time comparison to avoid timing attacks.
+        int v = 0;
         for (int i = 0; i < digesta.length; i++) {
-            if (digesta[i] != digestb[i]) {
-                return false;
-            }
+            v |= (digesta[i] ^ digestb[i]);
         }
-        return true;
+        return v == 0;
     }
 
     /**
@@ -349,14 +350,6 @@ public abstract class MessageDigest extends MessageDigestSpi {
         } catch (CloneNotSupportedException e) {
             return 0;
         }
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        if (this instanceof Cloneable) {
-            return super.clone();
-        }
-        throw new CloneNotSupportedException();
     }
 
     /**
@@ -420,12 +413,8 @@ public abstract class MessageDigest extends MessageDigestSpi {
         // Returns a clone if the spiImpl is cloneable
         @Override
         public Object clone() throws CloneNotSupportedException {
-            if (spiImpl instanceof Cloneable) {
-                MessageDigestSpi spi = (MessageDigestSpi) spiImpl.clone();
-                return new MessageDigestImpl(spi, getProvider(), getAlgorithm());
-            }
-
-            throw new CloneNotSupportedException();
+            MessageDigestSpi spi = (MessageDigestSpi) spiImpl.clone();
+            return new MessageDigestImpl(spi, getProvider(), getAlgorithm());
         }
     }
 }

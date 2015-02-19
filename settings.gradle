@@ -50,5 +50,5 @@ if (hasSettings) {
     }
 
     includeSubproject 'rt', 'libcore'
-    includeSubproject 'conscrypt', 'libcore/crypto'
+    includeSubproject 'conscrypt', 'external/conscrypt'
 }

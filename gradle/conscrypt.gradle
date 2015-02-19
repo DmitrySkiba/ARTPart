@@ -25,6 +25,7 @@ sourceSets {
     main {
         java {
             srcDir 'src/main/java'
+            srcDir 'src/platform/java'
         }
     }
 }

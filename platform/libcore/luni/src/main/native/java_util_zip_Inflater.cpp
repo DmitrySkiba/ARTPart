@@ -21,20 +21,8 @@
 #include "JniException.h"
 #include "ScopedPrimitiveArray.h"
 #include "ZipUtilities.h"
-#include <errno.h>
-
-#if !defined(__APPLE__)
 #include "zutil.h" // For DEF_WBITS and DEF_MEM_LEVEL.
-#else
-#ifndef DEF_WBITS
-#  define DEF_WBITS MAX_WBITS
-#endif
-#if MAX_MEM_LEVEL >= 8
-#  define DEF_MEM_LEVEL 8
-#else
-#  define DEF_MEM_LEVEL MAX_MEM_LEVEL
-#endif
-#endif
+#include <errno.h>
 
 static jlong Inflater_createStream(JNIEnv* env, jobject, jboolean noHeader) {
     UniquePtr<NativeZipStream> jstream(new NativeZipStream);

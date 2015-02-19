@@ -214,10 +214,11 @@ static jint NativeConverter_encode(JNIEnv* env, jclass, jlong address,
     UErrorCode errorCode = U_ZERO_ERROR;
     ucnv_fromUnicode(cnv , &cTarget, cTargetLimit, &mySource, mySourceLimit, NULL, (UBool) flush, &errorCode);
     *sourceOffset = (mySource - uSource.get()) - *sourceOffset;
-    *targetOffset = (reinterpret_cast<jbyte*>(cTarget) - uTarget.get()) - *targetOffset;
+    *targetOffset = (reinterpret_cast<jbyte*>(cTarget) - uTarget.get());
 
     // If there was an error, count the problematic characters.
-    if (errorCode == U_ILLEGAL_CHAR_FOUND || errorCode == U_INVALID_CHAR_FOUND) {
+    if (errorCode == U_ILLEGAL_CHAR_FOUND || errorCode == U_INVALID_CHAR_FOUND ||
+        errorCode == U_TRUNCATED_CHAR_FOUND) {
         int8_t invalidUCharCount = 32;
         UChar invalidUChars[32];
         UErrorCode minorErrorCode = U_ZERO_ERROR;
@@ -272,7 +273,8 @@ static jint NativeConverter_decode(JNIEnv* env, jclass, jlong address,
     *targetOffset = cTarget - uTarget.get() - *targetOffset;
 
     // If there was an error, count the problematic bytes.
-    if (errorCode == U_ILLEGAL_CHAR_FOUND || errorCode == U_INVALID_CHAR_FOUND) {
+    if (errorCode == U_ILLEGAL_CHAR_FOUND || errorCode == U_INVALID_CHAR_FOUND ||
+        errorCode == U_TRUNCATED_CHAR_FOUND) {
         int8_t invalidByteCount = 32;
         char invalidBytes[32] = {'\0'};
         UErrorCode minorErrorCode = U_ZERO_ERROR;

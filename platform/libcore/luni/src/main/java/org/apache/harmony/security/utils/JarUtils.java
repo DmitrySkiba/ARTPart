@@ -21,6 +21,7 @@
 */
 package org.apache.harmony.security.utils;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -30,10 +31,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.Signature;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import javax.security.auth.x500.X500Principal;
 
@@ -42,7 +45,6 @@ import org.apache.harmony.security.asn1.BerInputStream;
 import org.apache.harmony.security.pkcs7.ContentInfo;
 import org.apache.harmony.security.pkcs7.SignedData;
 import org.apache.harmony.security.pkcs7.SignerInfo;
-import org.apache.harmony.security.provider.cert.X509CertImpl;
 import org.apache.harmony.security.x501.AttributeTypeAndValue;
 
 public class JarUtils {
@@ -78,9 +80,13 @@ public class JarUtils {
             return null;
         }
         X509Certificate[] certs = new X509Certificate[encCerts.size()];
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
         int i = 0;
         for (org.apache.harmony.security.x509.Certificate encCert : encCerts) {
-            certs[i++] = new X509CertImpl(encCert);
+            final byte[] encoded = encCert.getEncoded();
+            final InputStream is = new ByteArrayInputStream(encoded);
+            certs[i++] = new VerbatimX509Certificate((X509Certificate) cf.generateCertificate(is),
+                    encoded);
         }
 
         List<SignerInfo> sigInfos = signedData.getSignerInfos();
@@ -122,7 +128,24 @@ public class JarUtils {
         String alg = null;
         Signature sig = null;
 
-        if (daOid != null && deaOid != null) {
+        if (deaOid != null) {
+            alg = deaOid;
+            try {
+                sig = Signature.getInstance(alg);
+            } catch (NoSuchAlgorithmException e) {
+            }
+
+            final String deaName = sigInfo.getDigestEncryptionAlgorithmName();
+            if (sig == null && deaName != null) {
+                alg = deaName;
+                try {
+                    sig = Signature.getInstance(alg);
+                } catch (NoSuchAlgorithmException e) {
+                }
+            }
+        }
+
+        if (sig == null && daOid != null && deaOid != null) {
             alg = daOid + "with" + deaOid;
             try {
                 sig = Signature.getInstance(alg);
@@ -133,26 +156,6 @@ public class JarUtils {
             if (sig == null) {
                 final String deaName = sigInfo.getDigestEncryptionAlgorithmName();
                 alg = daName + "with" + deaName;
-                try {
-                    sig = Signature.getInstance(alg);
-                } catch (NoSuchAlgorithmException e) {
-                }
-            }
-        }
-
-        /*
-         * TODO figure out the case in which we'd only use digestAlgorithm and
-         * add a test for it.
-         */
-        if (sig == null && daOid != null) {
-            alg = daOid;
-            try {
-                sig = Signature.getInstance(alg);
-            } catch (NoSuchAlgorithmException e) {
-            }
-
-            if (sig == null && daName != null) {
-                alg = daName;
                 try {
                     sig = Signature.getInstance(alg);
                 } catch (NoSuchAlgorithmException e) {
@@ -226,31 +229,33 @@ public class JarUtils {
         return createChain(certs[issuerSertIndex], certs);
     }
 
-    private static X509Certificate[] createChain(X509Certificate  signer, X509Certificate[] candidates) {
-        LinkedList chain = new LinkedList();
-        chain.add(0, signer);
+    private static X509Certificate[] createChain(X509Certificate signer,
+            X509Certificate[] candidates) {
+        Principal issuer = signer.getIssuerDN();
 
         // Signer is self-signed
-        if (signer.getSubjectDN().equals(signer.getIssuerDN())){
-            return (X509Certificate[])chain.toArray(new X509Certificate[1]);
+        if (signer.getSubjectDN().equals(issuer)) {
+            return new X509Certificate[] { signer };
         }
 
-        Principal issuer = signer.getIssuerDN();
+        ArrayList<X509Certificate> chain = new ArrayList<X509Certificate>(candidates.length + 1);
+        chain.add(0, signer);
+
         X509Certificate issuerCert;
         int count = 1;
         while (true) {
             issuerCert = findCert(issuer, candidates);
-            if( issuerCert == null) {
+            if (issuerCert == null) {
                 break;
             }
             chain.add(issuerCert);
             count++;
-            if (issuerCert.getSubjectDN().equals(issuerCert.getIssuerDN())) {
+            issuer = issuerCert.getIssuerDN();
+            if (issuerCert.getSubjectDN().equals(issuer)) {
                 break;
             }
-            issuer = issuerCert.getIssuerDN();
         }
-        return (X509Certificate[])chain.toArray(new X509Certificate[count]);
+        return chain.toArray(new X509Certificate[count]);
     }
 
     private static X509Certificate findCert(Principal issuer, X509Certificate[] candidates) {
@@ -262,4 +267,22 @@ public class JarUtils {
         return null;
     }
 
+    /**
+     * For legacy reasons we need to return exactly the original encoded
+     * certificate bytes, instead of letting the underlying implementation have
+     * a shot at re-encoding the data.
+     */
+    private static class VerbatimX509Certificate extends WrappedX509Certificate {
+        private byte[] encodedVerbatim;
+
+        public VerbatimX509Certificate(X509Certificate wrapped, byte[] encodedVerbatim) {
+            super(wrapped);
+            this.encodedVerbatim = encodedVerbatim;
+        }
+
+        @Override
+        public byte[] getEncoded() throws CertificateEncodingException {
+            return encodedVerbatim;
+        }
+    }
 }

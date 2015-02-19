@@ -19,5 +19,6 @@
 extern "C" bool RunJava(const char* oat_location, const char* class_name, const char* const* arguments);
 
 int main(int argc, const char* const* argv) {
-  return !RunJava(APP_OAT_PATH, "HelloWorld", NULL);
+  const char* arguments[] = {nullptr};
+  return !RunJava(APP_OAT_PATH, "HelloWorld", arguments);
 }

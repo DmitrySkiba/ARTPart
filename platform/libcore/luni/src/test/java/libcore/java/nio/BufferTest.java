@@ -16,12 +16,28 @@
 
 package libcore.java.nio;
 
-import java.io.*;
-import java.lang.reflect.*;
-import java.nio.*;
-import java.nio.channels.*;
-import java.util.Arrays;
 import junit.framework.TestCase;
+import java.io.File;
+import java.io.RandomAccessFile;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.nio.Buffer;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.CharBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.NioUtils;
+import java.nio.ReadOnlyBufferException;
+import java.nio.ShortBuffer;
+import java.nio.channels.FileChannel;
+import java.util.Arrays;
+import libcore.io.SizeOf;
 
 public class BufferTest extends TestCase {
     private static ByteBuffer allocateMapped(int size) throws Exception {
@@ -586,17 +602,31 @@ public class BufferTest extends TestCase {
         assertTrue(b.isDirect());
         // Check the buffer has an array of the right size.
         assertTrue(b.hasArray());
-        assertEquals(0, b.arrayOffset());
         byte[] array = b.array();
-        assertEquals(10, array.length);
+        assertTrue(array.length >= b.capacity());
+        assertEquals(10, b.capacity());
         // Check that writes to the array show up in the buffer.
         assertEquals(0, b.get(0));
-        array[0] = 1;
+        array[b.arrayOffset()] = 1;
         assertEquals(1, b.get(0));
         // Check that writes to the buffer show up in the array.
-        assertEquals(1, array[0]);
+        assertEquals(1, array[b.arrayOffset()]);
         b.put(0, (byte) 0);
-        assertEquals(0, array[0]);
+        assertEquals(0, array[b.arrayOffset()]);
+    }
+
+    // Test that direct byte buffers are 8 byte aligned.
+    // http://b/16449607
+    public void testDirectByteBufferAlignment() throws Exception {
+        ByteBuffer b = ByteBuffer.allocateDirect(10);
+        Field addressField = Buffer.class.getDeclaredField("effectiveDirectAddress");
+        assertTrue(addressField != null);
+        addressField.setAccessible(true);
+        long address = addressField.getLong(b);
+        // Check that the address field is aligned by 8.
+        // Normally reading this field happens in native code by calling
+        // GetDirectBufferAddress.
+        assertEquals(0, address % 8);
     }
 
     public void testSliceOffset() throws Exception {
@@ -604,14 +634,12 @@ public class BufferTest extends TestCase {
         ByteBuffer buffer = ByteBuffer.allocate(10);
         buffer.get();
         ByteBuffer slice = buffer.slice();
-        assertEquals(0, buffer.arrayOffset());
-        assertEquals(1, slice.arrayOffset());
+        assertEquals(buffer.arrayOffset() + 1, slice.arrayOffset());
 
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(10);
         directBuffer.get();
         ByteBuffer directSlice = directBuffer.slice();
-        assertEquals(0, directBuffer.arrayOffset());
-        assertEquals(1, directSlice.arrayOffset());
+        assertEquals(directBuffer.arrayOffset() + 1, directSlice.arrayOffset());
     }
 
     // http://code.google.com/p/android/issues/detail?id=16184
@@ -855,4 +883,396 @@ public class BufferTest extends TestCase {
         mapped.flip();
         mapped.get();
     }
+
+    public void testElementSizeShifts() {
+        // Element size shifts are the log base 2 of the element size
+        // of this buffer.
+        assertEquals(1, 1 << ByteBuffer.allocate(0).getElementSizeShift());
+
+        assertEquals(SizeOf.CHAR, 1 << CharBuffer.allocate(0).getElementSizeShift());
+        assertEquals(SizeOf.SHORT, 1 << ShortBuffer.allocate(0).getElementSizeShift());
+
+        assertEquals(SizeOf.INT, 1 << IntBuffer.allocate(0).getElementSizeShift());
+        assertEquals(SizeOf.FLOAT, 1 << FloatBuffer.allocate(0).getElementSizeShift());
+
+        assertEquals(SizeOf.LONG, 1 << LongBuffer.allocate(0).getElementSizeShift());
+        assertEquals(SizeOf.DOUBLE, 1 << DoubleBuffer.allocate(0).getElementSizeShift());
+    }
+
+    public void testFreed() {
+        ByteBuffer b1 = ByteBuffer.allocateDirect(1);
+        ByteBuffer b2 = b1.duplicate();
+        NioUtils.freeDirectBuffer(b1);
+        for (ByteBuffer b: new ByteBuffer[] { b1, b2 }) {
+            assertFalse(b.isAccessible());
+            try {
+                b.compact();
+                fail();
+            } catch (IllegalStateException expected) {
+            }
+            try {
+                b.duplicate();
+                fail();
+            } catch (IllegalStateException expected) {
+            }
+            testFailForPutMethods(b);
+            testFailForAsMethods(b);
+            testFailForGetMethods(b);
+            NioUtils.freeDirectBuffer(b); // should be able to free twice
+        }
+    }
+
+    public void testAccess() {
+        ByteBuffer b1 = ByteBuffer.allocate(1);
+        ByteBuffer b2 = b1.duplicate();
+        for (ByteBuffer b: new ByteBuffer[] { b1, b2 }) {
+            try {
+                b.setAccessible(true);
+                fail();
+            } catch (UnsupportedOperationException expected) {
+            }
+            try {
+                b.setAccessible(false);
+                fail();
+            } catch (UnsupportedOperationException expected) {
+            }
+        }
+        b1 = ByteBuffer.allocateDirect(8);
+        b2 = b1.duplicate();
+        b1.setAccessible(false);
+        ByteBuffer b3 = b1.asReadOnlyBuffer();
+        for (ByteBuffer b: new ByteBuffer[] { b1, b2, b3 }) {
+            b.duplicate();
+            assertFalse(b.isAccessible());
+            // even read-only buffers should fail with IllegalStateException
+            testFailForPutMethods(b);
+            testAsMethods(b);
+            testFailForGetMethods(b);
+            b.position(0);
+            b.limit(8);
+            try {
+                b.asCharBuffer().get(0);
+                fail();
+            } catch (IllegalStateException expected) {
+            }
+            try {
+                b.asShortBuffer().get(0);
+                fail();
+            } catch (IllegalStateException expected) {
+            }
+            try {
+                b.asIntBuffer().get(0);
+                fail();
+            } catch (IllegalStateException expected) {
+            }
+            try {
+                b.asLongBuffer().get(0);
+                fail();
+            } catch (IllegalStateException expected) {
+            }
+            try {
+                b.asFloatBuffer().get(0);
+                fail();
+            } catch (IllegalStateException expected) {
+            }
+            try {
+                b.asDoubleBuffer().get(0);
+                fail();
+            } catch (IllegalStateException expected) {
+            }
+        }
+        b2.setAccessible(true);
+        for (ByteBuffer b: new ByteBuffer[] { b1, b2, b3 }) {
+            assertTrue(b.isAccessible());
+            b.position(0);
+            b.limit(8);
+            b.asCharBuffer().get(0);
+            b.asShortBuffer().get(0);
+            b.asIntBuffer().get(0);
+            b.asLongBuffer().get(0);
+            b.asFloatBuffer().get(0);
+            b.asDoubleBuffer().get(0);
+            if (!b.isReadOnly()) {
+                testPutMethods(b);
+                b.compact();
+            } else {
+                try {
+                    b.put(0, (byte) 0);
+                    fail();
+                } catch (ReadOnlyBufferException expected) {
+                }
+            }
+            testAsMethods(b);
+            testGetMethods(b);
+        }
+    }
+
+    private void testPutMethods(ByteBuffer b) {
+        b.position(0);
+        b.put((byte) 0);
+        b.put(0, (byte) 0);
+        b.put(new byte[1]);
+        b.put(new byte[1], 0, 1);
+        b.put(ByteBuffer.allocate(1));
+        b.putChar('a');
+        b.putChar(0, 'a');
+        b.position(0);
+        b.putDouble(0);
+        b.putDouble(0, 0);
+        b.position(0);
+        b.putFloat(0);
+        b.putFloat(0, 0);
+        b.putInt(0);
+        b.putInt(0, 0);
+        b.position(0);
+        b.putLong(0);
+        b.putLong(0, 0);
+        b.position(0);
+        b.putShort((short) 0);
+        b.putShort(0, (short) 0);
+    }
+
+    private void testFailForPutMethods(ByteBuffer b) {
+        try {
+            b.put((byte) 0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.put(0, (byte) 0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.put(new byte[1]);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.put(new byte[1], 0, 1);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.put(ByteBuffer.allocate(1));
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putChar('a');
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putChar(0, 'a');
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putDouble(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putDouble(0, 0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putFloat(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putFloat(0, 0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putInt(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putInt(0, 0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putLong(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putLong(0, 0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putShort((short) 0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.putShort(0, (short) 0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+    }
+
+    private void testGetMethods(ByteBuffer b) {
+        b.position(0);
+        b.get();
+        b.get(0);
+        b.get(new byte[1]);
+        b.get(new byte[1], 0, 1);
+        b.getChar();
+        b.getChar(0);
+        b.position(0);
+        b.getDouble();
+        b.getDouble(0);
+        b.position(0);
+        b.getFloat();
+        b.getFloat(0);
+        b.getInt();
+        b.getInt(0);
+        b.position(0);
+        b.getLong();
+        b.getLong(0);
+        b.position(0);
+        b.getShort();
+        b.getShort(0);
+    }
+
+    private void testFailForGetMethods(ByteBuffer b) {
+        try {
+            b.get();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.get(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.get(new byte[1]);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.get(new byte[1], 0, 1);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getChar();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getChar(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getDouble();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getDouble(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getFloat();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getFloat(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getInt();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getInt(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getLong();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getLong(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getShort();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.getShort(0);
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+    }
+
+    private void testAsMethods(ByteBuffer b) {
+        b.asCharBuffer();
+        b.asDoubleBuffer();
+        b.asFloatBuffer();
+        b.asIntBuffer();
+        b.asLongBuffer();
+        b.asReadOnlyBuffer();
+        b.asShortBuffer();
+    }
+
+    private void testFailForAsMethods(ByteBuffer b) {
+        try {
+            b.asCharBuffer();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.asDoubleBuffer();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.asFloatBuffer();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.asIntBuffer();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.asLongBuffer();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.asReadOnlyBuffer();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+        try {
+            b.asShortBuffer();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
+    }
+
 }

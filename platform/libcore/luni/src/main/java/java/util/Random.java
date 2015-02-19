@@ -56,15 +56,19 @@ public class Random implements Serializable {
     private double nextNextGaussian;
 
     /**
+      * Used to generate initial seeds.
+      */
+    private static volatile long seedBase = 0;
+
+    /**
      * Constructs a random generator with an initial state that is
      * unlikely to be duplicated by a subsequent instantiation.
-     *
-     * <p>The initial state (that is, the seed) is <i>partially</i> based
-     * on the current time of day in milliseconds.
      */
     public Random() {
-        // Note: Using identityHashCode() to be hermetic wrt subclasses.
-        setSeed(System.currentTimeMillis() + System.identityHashCode(this));
+        // Note: Don't use identityHashCode(this) since that causes the monitor to
+        // get inflated when we synchronize.
+        setSeed(System.nanoTime() + seedBase);
+        ++seedBase;
     }
 
     /**
@@ -85,6 +89,9 @@ public class Random implements Serializable {
      * Volume 2: Seminumerical Algorithms</i>, section 3.2.1.
      *
      * <p>Most applications will want to use one of this class' convenience methods instead.
+     *
+     * <p>Subclasses only need to override this method to alter the behavior
+     * of all the public methods.
      */
     protected synchronized int next(int bits) {
         seed = (seed * multiplier + 0xbL) & ((1L << 48) - 1);

@@ -19,8 +19,6 @@
 
 #include <jni.h>
 
-#define NO_JNIINVOCATION // TODO: build JniInvocation and only support Init(NULL)
-
 // JniInvocation adds a layer of indirection for applications using
 // the JNI invocation API to allow the JNI implementation to be
 // selected dynamically. Apps can specify a specific implementation to
@@ -39,6 +37,9 @@ class JniInvocation {
   // implementation, or null to allow defaulting via
   // persist.sys.dalvik.vm.lib.
   bool Init(const char* library);
+
+  // Exposes which library is actually loaded from the given name.
+  static const char* GetLibrary(const char* library);
 
  private:
 

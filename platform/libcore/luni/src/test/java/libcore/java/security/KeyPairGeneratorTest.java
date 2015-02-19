@@ -47,65 +47,120 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.crypto.interfaces.DHPrivateKey;
+import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
 
 import junit.framework.TestCase;
 
 public class KeyPairGeneratorTest extends TestCase {
 
-    public void test_getInstance() throws Exception {
+    public void test_providerCount() {
         Provider[] providers = Security.getProviders();
-        for (Provider provider : providers) {
-            Set<Provider.Service> services = provider.getServices();
-            for (Provider.Service service : services) {
-                String type = service.getType();
-                if (!type.equals("KeyPairGenerator")) {
-                    continue;
+        // We expect there to be at least one provider.
+        assertTrue(providers.length > 0);
+        // If this fails remember to add _provider methods below. This test is sharded because it
+        // takes a long time to execute.
+        assertTrue(providers.length < 10);
+    }
+
+    public void test_getInstance_provider0() throws Exception {
+        test_getInstance(0);
+    }
+
+    public void test_getInstance_provider1() throws Exception {
+        test_getInstance(1);
+    }
+
+    public void test_getInstance_provider2() throws Exception {
+        test_getInstance(2);
+    }
+
+    public void test_getInstance_provider3() throws Exception {
+        test_getInstance(3);
+    }
+
+    public void test_getInstance_provider4() throws Exception {
+        test_getInstance(4);
+    }
+
+    public void test_getInstance_provider5() throws Exception {
+        test_getInstance(5);
+    }
+
+    public void test_getInstance_provider6() throws Exception {
+        test_getInstance(6);
+    }
+
+    public void test_getInstance_provider7() throws Exception {
+        test_getInstance(7);
+    }
+
+    public void test_getInstance_provider8() throws Exception {
+        test_getInstance(8);
+    }
+
+    public void test_getInstance_provider9() throws Exception {
+        test_getInstance(9);
+    }
+
+    private void test_getInstance(int providerIndex) throws Exception {
+        Provider[] providers = Security.getProviders();
+        if (providerIndex >= providers.length) {
+            // Providers can be added by vendors and other tests. We do not
+            // specify a fixed number and silenty pass if the provider at the
+            // specified index does not exist.
+            return;
+        }
+        Provider provider = providers[providerIndex];
+        Set<Provider.Service> services = provider.getServices();
+        for (Provider.Service service : services) {
+            String type = service.getType();
+            if (!type.equals("KeyPairGenerator")) {
+                continue;
+            }
+            String algorithm = service.getAlgorithm();
+
+            // AndroidKeyStore is tested in CTS.
+            if ("AndroidKeyStore".equals(provider.getName())) {
+                continue;
+            }
+
+            AlgorithmParameterSpec params = null;
+
+            if ("DH".equals(algorithm)) {
+                params = getDHParams();
+            }
+
+            try {
+                // KeyPairGenerator.getInstance(String)
+                KeyPairGenerator kpg1 = KeyPairGenerator.getInstance(algorithm);
+                assertEquals(algorithm, kpg1.getAlgorithm());
+                if (params != null) {
+                    kpg1.initialize(params);
                 }
-                String algorithm = service.getAlgorithm();
+                test_KeyPairGenerator(kpg1);
 
-                // AndroidKeyStore is tested in CTS.
-                if ("AndroidKeyStore".equals(provider.getName())) {
-                    continue;
+                // KeyPairGenerator.getInstance(String, Provider)
+                KeyPairGenerator kpg2 = KeyPairGenerator.getInstance(algorithm, provider);
+                assertEquals(algorithm, kpg2.getAlgorithm());
+                assertEquals(provider, kpg2.getProvider());
+                if (params != null) {
+                    kpg2.initialize(params);
                 }
+                test_KeyPairGenerator(kpg2);
 
-                AlgorithmParameterSpec params = null;
-
-                // TODO: detect if we're running in vogar and run the full test
-                if ("DH".equals(algorithm)) {
-                    params = getDHParams();
+                // KeyPairGenerator.getInstance(String, String)
+                KeyPairGenerator kpg3 = KeyPairGenerator.getInstance(algorithm,
+                                                                    provider.getName());
+                assertEquals(algorithm, kpg3.getAlgorithm());
+                assertEquals(provider, kpg3.getProvider());
+                if (params != null) {
+                    kpg3.initialize(params);
                 }
-
-                try {
-                    // KeyPairGenerator.getInstance(String)
-                    KeyPairGenerator kpg1 = KeyPairGenerator.getInstance(algorithm);
-                    assertEquals(algorithm, kpg1.getAlgorithm());
-                    if (params != null) {
-                        kpg1.initialize(params);
-                    }
-                    test_KeyPairGenerator(kpg1);
-
-                    // KeyPairGenerator.getInstance(String, Provider)
-                    KeyPairGenerator kpg2 = KeyPairGenerator.getInstance(algorithm, provider);
-                    assertEquals(algorithm, kpg2.getAlgorithm());
-                    assertEquals(provider, kpg2.getProvider());
-                    if (params != null) {
-                        kpg2.initialize(params);
-                    }
-                    test_KeyPairGenerator(kpg2);
-
-                    // KeyPairGenerator.getInstance(String, String)
-                    KeyPairGenerator kpg3 = KeyPairGenerator.getInstance(algorithm,
-                                                                        provider.getName());
-                    assertEquals(algorithm, kpg3.getAlgorithm());
-                    assertEquals(provider, kpg3.getProvider());
-                    if (params != null) {
-                        kpg3.initialize(params);
-                    }
-                    test_KeyPairGenerator(kpg3);
-                } catch (Exception e) {
-                    throw new Exception("Problem testing KeyPairGenerator." + algorithm, e);
-                }
+                test_KeyPairGenerator(kpg3);
+            } catch (Exception e) {
+                throw new Exception("Problem testing KeyPairGenerator." + algorithm, e);
             }
         }
     }
@@ -161,6 +216,14 @@ public class KeyPairGeneratorTest extends TestCase {
         test_KeyPair(kpg, kpg.generateKeyPair());
 
         String algorithm = kpg.getAlgorithm();
+
+        // TODO: detect if we're running in vogar and run the full test
+        if ("DH".equals(algorithm)) {
+            // Disabled because this takes too long on devices.
+            // TODO: Re-enable DH test. http://b/5513723.
+            return;
+        }
+
         List<Integer> keySizes = getKeySizes(algorithm);
         for (int keySize : keySizes) {
             kpg.initialize(keySize);
@@ -206,6 +269,17 @@ public class KeyPairGeneratorTest extends TestCase {
             expectedAlgorithm = "DH";
         }
         assertEquals(expectedAlgorithm, k.getAlgorithm().toUpperCase());
+        if (expectedAlgorithm.equals("DH")) {
+            if (k instanceof DHPublicKey) {
+                DHPublicKey dhPub = (DHPublicKey) k;
+                assertEquals(dhPub.getParams().getP(), getDHParams().getP());
+            } else if (k instanceof DHPrivateKey) {
+                DHPrivateKey dhPriv = (DHPrivateKey) k;
+                assertEquals(dhPriv.getParams().getP(), getDHParams().getP());
+            } else {
+                fail("not a public or private key!?");
+            }
+        }
         assertNotNull(k.getEncoded());
         assertNotNull(k.getFormat());
 
@@ -287,7 +361,7 @@ public class KeyPairGeneratorTest extends TestCase {
      *
      * openssl gendh 512 | openssl dhparams -C
      */
-    private static AlgorithmParameterSpec getDHParams() {
+    private static DHParameterSpec getDHParams() {
         BigInteger p = new BigInteger("E7AB1768BD75CD24700960FFA32D3F1557344E587101237532CC641646ED7A7C104743377F6D46251698B665CE2A6CBAB6714C2569A7D2CA22C0CF03FA40AC93", 16);
         BigInteger g = new BigInteger("02", 16);
         return new DHParameterSpec(p, g, 512);
@@ -340,8 +414,6 @@ public class KeyPairGeneratorTest extends TestCase {
 
     public void testDSAGeneratorWithParams() throws Exception {
         final DSAParameterSpec dsaSpec = new DSAParameterSpec(DSA_P, DSA_Q, DSA_G);
-
-        boolean failure = false;
 
         final Provider[] providers = Security.getProviders();
         for (final Provider p : providers) {

@@ -37,6 +37,13 @@ import java.util.Arrays;
  */
 public class BufferedInputStream extends FilterInputStream {
     /**
+     * The default buffer size if it is not specified.
+     *
+     * @hide
+     */
+    public static final int DEFAULT_BUFFER_SIZE = 8192;
+
+    /**
      * The buffer containing the current bytes read from the target InputStream.
      */
     protected volatile byte[] buf;
@@ -73,7 +80,7 @@ public class BufferedInputStream extends FilterInputStream {
      * @param in the {@code InputStream} the buffer reads from.
      */
     public BufferedInputStream(InputStream in) {
-        this(in, 8192);
+        this(in, DEFAULT_BUFFER_SIZE);
     }
 
     /**
@@ -325,7 +332,7 @@ public class BufferedInputStream extends FilterInputStream {
         if (buf == null) {
             throw new IOException("Stream is closed");
         }
-        if (-1 == markpos) {
+        if (markpos == -1) {
             throw new IOException("Mark has been invalidated.");
         }
         pos = markpos;

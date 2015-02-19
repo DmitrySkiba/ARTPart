@@ -155,8 +155,10 @@ public abstract class NumberFormat extends Format {
 
     private boolean groupingUsed = true, parseIntegerOnly = false;
 
-    private int maximumIntegerDigits = 40, minimumIntegerDigits = 1,
-            maximumFractionDigits = 3, minimumFractionDigits = 0;
+    int maximumIntegerDigits = 40;
+    int minimumIntegerDigits = 1;
+    int maximumFractionDigits = 3;
+    int minimumFractionDigits = 0;
 
     /**
      * Used by subclasses. This was public in Java 5.
@@ -208,8 +210,7 @@ public abstract class NumberFormat extends Format {
      * @return the formatted string.
      */
     public final String format(double value) {
-        return format(value, new StringBuffer(), new FieldPosition(0))
-                .toString();
+        return format(value, new StringBuffer(), new FieldPosition(0)).toString();
     }
 
     /**
@@ -241,8 +242,7 @@ public abstract class NumberFormat extends Format {
      * @return the formatted string.
      */
     public final String format(long value) {
-        return format(value, new StringBuffer(), new FieldPosition(0))
-                .toString();
+        return format(value, new StringBuffer(), new FieldPosition(0)).toString();
     }
 
     /**
@@ -301,7 +301,11 @@ public abstract class NumberFormat extends Format {
             double dv = ((Number) object).doubleValue();
             return format(dv, buffer, field);
         }
-        throw new IllegalArgumentException("Bad class: " + object.getClass());
+        if (object == null) {
+            throw new IllegalArgumentException("Can't format null object");
+        } else {
+            throw new IllegalArgumentException("Bad class: " + object.getClass());
+        }
     }
 
     /**
@@ -349,6 +353,10 @@ public abstract class NumberFormat extends Format {
      * @return a {@code NumberFormat} for handling currency values.
      */
     public static NumberFormat getCurrencyInstance(Locale locale) {
+        if (locale == null) {
+            throw new NullPointerException("locale == null");
+        }
+
         return getInstance(LocaleData.get(locale).currencyPattern, locale);
     }
 
@@ -372,6 +380,10 @@ public abstract class NumberFormat extends Format {
      * @return a {@code NumberFormat} for handling integers.
      */
     public static NumberFormat getIntegerInstance(Locale locale) {
+        if (locale == null) {
+            throw new NullPointerException("locale == null");
+        }
+
         NumberFormat result = getInstance(LocaleData.get(locale).integerPattern, locale);
         result.setParseIntegerOnly(true);
         return result;
@@ -465,6 +477,9 @@ public abstract class NumberFormat extends Format {
      * @return a {@code NumberFormat} for handling {@code Number} objects.
      */
     public static NumberFormat getNumberInstance(Locale locale) {
+        if (locale == null) {
+            throw new NullPointerException("locale == null");
+        }
         return getInstance(LocaleData.get(locale).numberPattern, locale);
     }
 
@@ -492,6 +507,10 @@ public abstract class NumberFormat extends Format {
      * treated as 5,300%, which is rarely what you intended.
      */
     public static NumberFormat getPercentInstance(Locale locale) {
+        if (locale == null) {
+            throw new NullPointerException("locale == null");
+        }
+
         return getInstance(LocaleData.get(locale).percentPattern, locale);
     }
 
@@ -514,11 +533,8 @@ public abstract class NumberFormat extends Format {
     }
 
     /**
-     * Indicates whether this number format only parses integer numbers. Parsing
+     * Returns true if this number format only parses integer numbers. Parsing
      * stops if a decimal separator is encountered.
-     *
-     * @return {@code true} if this number format only parses integers,
-     *         {@code false} if if parsese integers as well as fractions.
      */
     public boolean isParseIntegerOnly() {
         return parseIntegerOnly;
@@ -742,10 +758,6 @@ public abstract class NumberFormat extends Format {
      * The instances of this inner class are used as attribute keys and values
      * in {@code AttributedCharacterIterator} that the
      * {@link NumberFormat#formatToCharacterIterator(Object)} method returns.
-     * <p>
-     * There is no public constructor in this class, the only instances are the
-     * constants defined here.
-     * <p>
      */
     public static class Field extends Format.Field {
 
@@ -809,9 +821,6 @@ public abstract class NumberFormat extends Format {
         /**
          * Constructs a new instance of {@code NumberFormat.Field} with the
          * given field name.
-         *
-         * @param fieldName
-         *            the field name.
          */
         protected Field(String fieldName) {
             super(fieldName);

@@ -82,6 +82,46 @@ public class SSLContext {
     /**
      * Creates a new {@code SSLContext} instance for the specified protocol.
      *
+     * <p>The following protocols are supported:
+     * <table>
+     *     <thead>
+     *         <tr>
+     *             <th>Protocol</th>
+     *             <th>API Levels</th>
+     *         </tr>
+     *     </thead>
+     *     <tbody>
+     *         <tr>
+     *             <td>Default</td>
+     *             <td>9+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>SSL</td>
+     *             <td>9+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>SSLv3</td>
+     *             <td>9+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>TLS</td>
+     *             <td>1+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>TLSv1</td>
+     *             <td>1+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>TLSv1.1</td>
+     *             <td>16+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>TLSv1.2</td>
+     *             <td>16+</td>
+     *         </tr>
+     *     </tbody>
+     * </table>
+     *
      * @param protocol
      *            the requested protocol to create a context for.
      * @return the created {@code SSLContext} instance.
@@ -102,6 +142,79 @@ public class SSLContext {
     /**
      * Creates a new {@code SSLContext} instance for the specified protocol from
      * the specified provider.
+     *
+     * <p>The following combinations are supported:
+     * <table>
+     *     <thead>
+     *         <tr>
+     *             <th>Protocol</th>
+     *             <th>Provider</th>
+     *             <th>API Levels</th>
+     *         </tr>
+     *     </thead>
+     *     <tbody>
+     *         <tr>
+     *             <td>Default</td>
+     *             <td>AndroidOpenSSL</td>
+     *             <td>9+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>SSL</td>
+     *             <td>AndroidOpenSSL</td>
+     *             <td>9+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>SSL</td>
+     *             <td>HarmonyJSSE</td>
+     *             <td>9-19</td>
+     *         </tr>
+     *         <tr>
+     *             <td>SSLv3</td>
+     *             <td>AndroidOpenSSL</td>
+     *             <td>9+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>SSLv3</td>
+     *             <td>HarmonyJSSE</td>
+     *             <td>9-19</td>
+     *         </tr>
+     *         <tr>
+     *             <td>TLS</td>
+     *             <td>AndroidOpenSSL</td>
+     *             <td>9+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>TLS</td>
+     *             <td>HarmonyJSSE</td>
+     *             <td>1-19</td>
+     *         </tr>
+     *         <tr>
+     *             <td>TLSv1</td>
+     *             <td>AndroidOpenSSL</td>
+     *             <td>9+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>TLSv1</td>
+     *             <td>HarmonyJSSE</td>
+     *             <td>1-19</td>
+     *         </tr>
+     *         <tr>
+     *             <td>TLSv1.1</td>
+     *             <td>AndroidOpenSSL</td>
+     *             <td>16+</td>
+     *         </tr>
+     *         <tr>
+     *             <td>TLSv1.2</td>
+     *             <td>AndroidOpenSSL</td>
+     *             <td>16+</td>
+     *         </tr>
+     *     </tbody>
+     * </table>
+     *
+     * <p><strong>NOTE:</strong> The best practice is to rely on platform
+     * defaults rather than explicitly specify a provider.
+     * {@link #getDefault()} and {@link #getInstance(String)} are normally
+     * preferred over this method.
      *
      * @param protocol
      *            the requested protocol to create a context for.
@@ -201,16 +314,33 @@ public class SSLContext {
     }
 
     /**
-     * Initializes this {@code SSLContext} instance. All of the arguments are
-     * optional, and the security providers will be searched for the required
-     * implementations of the needed algorithms.
+     * Initializes this {@code SSLContext} instance. Three aspects of the context can be configured
+     * during initialization:
+     * <ul>
+     *   <li>Providers of key material for key exchange and peer authentication
+     *       ({@link KeyManager} instances),</li>
+     *   <li>Providers of trust decisions about peers ({@link TrustManager} instances),
+     *   </li>
+     *   <li>Provider of randomness ({@link SecureRandom} instance).</li>
+     * </ul>
+     *
+     * <p>For each type of {@code KeyManager} or {@code TrustManager} used by this context, only the
+     * first matching instance from {@code km} or {@code tm} will be used. For example, only the
+     * first instance of {@link X509TrustManager} from {@code tm} will be used.
+     *
+     * <p>For any parameter set to {@code null} defaults will be used. In that case, the installed
+     * security providers will be searched for the highest priority implementation of the required
+     * primitives. For {@code km} and {@code tm}, the highest priority implementation
+     * of {@link KeyManagerFactory} and {@link TrustManagerFactory} will be used to obtain the
+     * required types of {@code KeyManager} and {@code TrustManager}. For {@code sr}, the default
+     * {@code SecureRandom} implementation will be used.
      *
      * @param km
-     *            the key sources or {@code null}.
+     *            the key sources or {@code null} for default.
      * @param tm
-     *            the trust decision sources or {@code null}.
+     *            the trust decision sources or {@code null} for default.
      * @param sr
-     *            the randomness source or {@code null.}
+     *            the randomness source or {@code null} for default.
      * @throws KeyManagementException
      *             if initializing this instance fails.
      */

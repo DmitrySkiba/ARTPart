@@ -15,13 +15,18 @@
 
 LOCAL_PATH := $(call my-dir)
 
+#
+# Subprojects with separate makefiles
+#
+
+subdirs := benchmarks
+subdir_makefiles := $(call all-named-subdir-makefiles,$(subdirs))
 
 #
 # Include the definitions to build the Java code.
 #
 
 include $(LOCAL_PATH)/JavaLibrary.mk
-
 
 #
 # Include the definitions to build the native code.
@@ -36,11 +41,6 @@ include $(LOCAL_PATH)/NativeCode.mk
 include $(LOCAL_PATH)/CaCerts.mk
 
 #
-# Include the definitions to build the caliper benchmarks.
-#
-include $(LOCAL_PATH)/benchmarks/Android.mk
-
-#
 # Disable test modules if LIBCORE_SKIP_TESTS environment variable is set.
 #
 
@@ -50,25 +50,4 @@ $(info * libcore tests are skipped because environment variable LIBCORE_SKIP_TES
 $(info ********************************************************************************)
 endif
 
-
-#
-# "m dalvik-host" for quick minimal host build
-#
-
-ifeq ($(WITH_HOST_DALVIK),true)
-    .PHONY: dalvik-host
-    dalvik-host: \
-        dalvik \
-        $(HOST_OUT)/bin/dalvikvm \
-        $(HOST_OUT)/bin/dexopt \
-        $(HOST_OUT)/lib/libconscrypt_jni.so \
-        $(HOST_OUT)/lib/libjavacore.so \
-        cacerts-host \
-        core-hostdex \
-        conscrypt-hostdex \
-        okhttp-hostdex \
-        bouncycastle-hostdex \
-        apache-xml-hostdex \
-        apache-harmony-tests-hostdex \
-        $(call intermediates-dir-for,JAVA_LIBRARIES,core-tests,,COMMON)/classes.jar
-endif
+include $(subdir_makefiles)

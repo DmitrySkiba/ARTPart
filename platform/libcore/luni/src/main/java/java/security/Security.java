@@ -19,6 +19,7 @@ package java.security;
 
 import java.io.BufferedInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,10 +73,9 @@ public final class Security {
     // Register default providers
     private static void registerDefaultProviders() {
         secprops.put("security.provider.1", "com.android.org.conscrypt.OpenSSLProvider");
-        secprops.put("security.provider.2", "org.apache.harmony.security.provider.cert.DRLCertFactory");
-        secprops.put("security.provider.3", "com.android.org.bouncycastle.jce.provider.BouncyCastleProvider");
-        secprops.put("security.provider.4", "org.apache.harmony.security.provider.crypto.CryptoProvider");
-        secprops.put("security.provider.5", "com.android.org.conscrypt.JSSEProvider");
+        secprops.put("security.provider.2", "com.android.org.bouncycastle.jce.provider.BouncyCastleProvider");
+        secprops.put("security.provider.3", "org.apache.harmony.security.provider.crypto.CryptoProvider");
+        secprops.put("security.provider.4", "com.android.org.conscrypt.JSSEProvider");
     }
 
     /**
@@ -96,7 +96,7 @@ public final class Security {
         String prop = "Alg." + propName + "." + algName;
         Provider[] providers = getProviders();
         for (Provider provider : providers) {
-            for (Enumeration e = provider.propertyNames(); e.hasMoreElements(); ) {
+            for (Enumeration<?> e = provider.propertyNames(); e.hasMoreElements();) {
                 String propertyName = (String) e.nextElement();
                 if (propertyName.equalsIgnoreCase(prop)) {
                     return provider.getProperty(propertyName);
@@ -184,7 +184,8 @@ public final class Security {
      * @return an array containing all installed providers.
      */
     public static synchronized Provider[] getProviders() {
-        return Services.getProviders();
+        ArrayList<Provider> providers = Services.getProviders();
+        return providers.toArray(new Provider[providers.size()]);
     }
 
     /**
@@ -274,7 +275,7 @@ public final class Security {
         if (filter.isEmpty()) {
             return null;
         }
-        java.util.List<Provider> result = Services.getProvidersList();
+        ArrayList<Provider> result = new ArrayList<Provider>(Services.getProviders());
         Set<Entry<String, String>> keys = filter.entrySet();
         Map.Entry<String, String> entry;
         for (Iterator<Entry<String, String>> it = keys.iterator(); it.hasNext();) {
@@ -306,23 +307,23 @@ public final class Security {
             if (serv.length() == 0 || alg.length() == 0) {
                 throw new InvalidParameterException();
             }
-            Provider p;
-            for (int k = 0; k < result.size(); k++) {
-                try {
-                    p = result.get(k);
-                } catch (IndexOutOfBoundsException e) {
-                    break;
-                }
-                if (!p.implementsAlg(serv, alg, attribute, val)) {
-                    result.remove(p);
-                    k--;
-                }
-            }
+            filterProviders(result, serv, alg, attribute, val);
         }
         if (result.size() > 0) {
             return result.toArray(new Provider[result.size()]);
         }
         return null;
+    }
+
+    private static void filterProviders(ArrayList<Provider> providers, String service,
+            String algorithm, String attribute, String attrValue) {
+        Iterator<Provider> it = providers.iterator();
+        while (it.hasNext()) {
+            Provider p = it.next();
+            if (!p.implementsAlg(service, algorithm, attribute, attrValue)) {
+                it.remove();
+            }
+        }
     }
 
     /**
@@ -347,6 +348,7 @@ public final class Security {
      * Sets the value of the specified security property.
      */
     public static void setProperty(String key, String value) {
+        Services.setNeedRefresh();
         secprops.put(key, value);
     }
 
@@ -384,9 +386,9 @@ public final class Security {
      *
      */
     private static void renumProviders() {
-        Provider[] p = Services.getProviders();
-        for (int i = 0; i < p.length; i++) {
-            p[i].setProviderNumber(i + 1);
+        ArrayList<Provider> providers = Services.getProviders();
+        for (int i = 0; i < providers.size(); i++) {
+            providers.get(i).setProviderNumber(i + 1);
         }
     }
 

@@ -16,11 +16,11 @@
 
 package java.nio;
 
+import android.system.ErrnoException;
 import java.nio.channels.FileChannel.MapMode;
-import libcore.io.ErrnoException;
 import libcore.io.Libcore;
-import libcore.io.Memory;
-import static libcore.io.OsConstants.*;
+import static android.system.OsConstants.MS_SYNC;
+import static android.system.OsConstants._SC_PAGE_SIZE;
 
 /**
  * {@code MappedByteBuffer} is a special kind of direct byte buffer which maps a
@@ -38,10 +38,12 @@ import static libcore.io.OsConstants.*;
  */
 public abstract class MappedByteBuffer extends ByteBuffer {
   final MapMode mapMode;
+  final MemoryBlock block;
 
-  MappedByteBuffer(MemoryBlock block, int capacity, MapMode mapMode) {
-    super(capacity, block);
+  MappedByteBuffer(MemoryBlock block, int capacity, MapMode mapMode, long effectiveDirectAddress) {
+    super(capacity, effectiveDirectAddress);
     this.mapMode = mapMode;
+    this.block = block;
   }
 
   /**

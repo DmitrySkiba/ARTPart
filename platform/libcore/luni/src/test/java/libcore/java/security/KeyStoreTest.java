@@ -46,6 +46,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -55,11 +56,17 @@ import junit.framework.TestCase;
 
 public class KeyStoreTest extends TestCase {
 
-    private static PrivateKeyEntry PRIVATE_KEY;
-    private static PrivateKeyEntry PRIVATE_KEY_2;
+    private static final HashMap<String, PrivateKeyEntry> sPrivateKeys
+            = new HashMap<String, PrivateKeyEntry>();
 
-    private static SecretKey SECRET_KEY;
-    private static SecretKey SECRET_KEY_2;
+    private static TestKeyStore sTestKeyStore;
+
+    private static final String[] KEY_TYPES = new String[] { "DH", "DSA", "RSA", "EC" };
+
+    private static PrivateKeyEntry sPrivateKey2;
+
+    private static SecretKey sSecretKey;
+    private static SecretKey sSecretKey2;
 
     private static final String ALIAS_PRIVATE = "private";
     private static final String ALIAS_CERTIFICATE = "certificate";
@@ -87,31 +94,56 @@ public class KeyStoreTest extends TestCase {
     private static final ProtectionParameter PARAM_BAD = new PasswordProtection(PASSWORD_BAD);
 
     private static PrivateKeyEntry getPrivateKey() {
-        if (PRIVATE_KEY == null) {
-            PRIVATE_KEY = TestKeyStore.getServer().getPrivateKey("RSA", "RSA");
+        return getPrivateKey("RSA");
+    }
+
+    private static PrivateKeyEntry getPrivateKey(String keyType) {
+        // Avoiding initialization of TestKeyStore in the static initializer: it breaks CTS tests
+        // by causing a NetworkOnMainThreadException.
+        if (sTestKeyStore == null) {
+            sTestKeyStore = new TestKeyStore.Builder()
+                .keyAlgorithms("RSA", "DH_RSA", "DSA", "EC")
+                .aliasPrefix("rsa-dsa-ec-dh")
+                .build();
         }
-        return PRIVATE_KEY;
+
+        PrivateKeyEntry entry = sPrivateKeys.get(keyType);
+        if (entry == null) {
+            if ("RSA".equals(keyType)) {
+                entry = sTestKeyStore.getPrivateKey("RSA", "RSA");
+            } else if ("DH".equals(keyType)) {
+                entry = sTestKeyStore.getPrivateKey("DH", "RSA");
+            } else if ("DSA".equals(keyType)) {
+                entry = sTestKeyStore.getPrivateKey("DSA", "DSA");
+            } else if ("EC".equals(keyType)) {
+                entry = sTestKeyStore.getPrivateKey("EC", "EC");
+            } else {
+                throw new IllegalArgumentException("Unexpected key type " + keyType);
+            }
+            sPrivateKeys.put(keyType, entry);
+        }
+        return entry;
     }
 
     private static PrivateKeyEntry getPrivateKey2() {
-        if (PRIVATE_KEY_2 == null) {
-            PRIVATE_KEY_2 = TestKeyStore.getClientCertificate().getPrivateKey("RSA", "RSA");
+        if (sPrivateKey2 == null) {
+            sPrivateKey2 = TestKeyStore.getClientCertificate().getPrivateKey("RSA", "RSA");
         }
-        return PRIVATE_KEY_2;
+        return sPrivateKey2;
     }
 
     private static SecretKey getSecretKey() {
-        if (SECRET_KEY == null) {
-            SECRET_KEY = generateSecretKey();
+        if (sSecretKey == null) {
+            sSecretKey = generateSecretKey();
         }
-        return SECRET_KEY;
+        return sSecretKey;
     }
 
     private static SecretKey getSecretKey2() {
-        if (SECRET_KEY_2 == null) {
-            SECRET_KEY_2 = generateSecretKey();
+        if (sSecretKey2 == null) {
+            sSecretKey2 = generateSecretKey();
         }
-        return SECRET_KEY_2;
+        return sSecretKey2;
     }
 
     private static SecretKey generateSecretKey() {
@@ -170,7 +202,8 @@ public class KeyStoreTest extends TestCase {
         // Don't bother testing BC on RI
         // TODO enable AndroidKeyStore when CTS can set up the keystore
         return (StandardNames.IS_RI && ks.getProvider().getName().equals("BC"))
-                || "AndroidKeyStore".equalsIgnoreCase(ks.getType());
+                || "AndroidKeyStore".equalsIgnoreCase(ks.getType())
+                || "TimaKeyStore".equalsIgnoreCase(ks.getType());
     }
 
     private static boolean isNullPasswordAllowed(KeyStore ks) {
@@ -340,9 +373,14 @@ public class KeyStoreTest extends TestCase {
         ks.setCertificateEntry(alias, certificate);
     }
 
+
     public static void assertPrivateKey(Key actual)
             throws Exception {
         assertEquals(getPrivateKey().getPrivateKey(), actual);
+    }
+    public static void assertPrivateKey(String keyType, Key actual)
+            throws Exception {
+        assertEquals(getPrivateKey(keyType).getPrivateKey(), actual);
     }
     public static void assertPrivateKey2(Key actual)
             throws Exception {
@@ -2182,8 +2220,10 @@ public class KeyStoreTest extends TestCase {
                 continue;
             }
             if (isNullPasswordAllowed(keyStore) || isKeyPasswordIgnored(keyStore)) {
-                keyStore.setEntry(ALIAS_PRIVATE, getPrivateKey(), null);
-                assertPrivateKey(keyStore.getKey(ALIAS_PRIVATE, null));
+                for (String keyType : KEY_TYPES) {
+                    keyStore.setEntry(ALIAS_PRIVATE, getPrivateKey(keyType), null);
+                    assertPrivateKey(keyType, keyStore.getKey(ALIAS_PRIVATE, null));
+                }
             } else {
                 try {
                     keyStore.setEntry(ALIAS_PRIVATE, getPrivateKey(), null);

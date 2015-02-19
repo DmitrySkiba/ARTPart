@@ -20,14 +20,15 @@ package java.util.zip;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import libcore.io.Streams;
 import libcore.io.BufferIterator;
 import libcore.io.HeapBufferIterator;
+import libcore.io.Streams;
 
 /**
  * An entry within a zip file.
@@ -54,6 +55,8 @@ public class ZipEntry implements ZipConstants, Cloneable {
     int nameLength = -1;
     long localHeaderRelOffset = -1;
 
+    long dataOffset = -1;
+
     /**
      * Zip entry state: Deflated.
      */
@@ -63,6 +66,23 @@ public class ZipEntry implements ZipConstants, Cloneable {
      * Zip entry state: Stored.
      */
     public static final int STORED = 0;
+
+    ZipEntry(String name, String comment, long crc, long compressedSize,
+            long size, int compressionMethod, int time, int modDate, byte[] extra,
+            int nameLength, long localHeaderRelOffset, long dataOffset) {
+        this.name = name;
+        this.comment = comment;
+        this.crc = crc;
+        this.compressedSize = compressedSize;
+        this.size = size;
+        this.compressionMethod = compressionMethod;
+        this.time = time;
+        this.modDate = modDate;
+        this.extra = extra;
+        this.nameLength = nameLength;
+        this.localHeaderRelOffset = localHeaderRelOffset;
+        this.dataOffset = dataOffset;
+    }
 
     /**
      * Constructs a new {@code ZipEntry} with the specified name. The name is actually a path,
@@ -75,9 +95,7 @@ public class ZipEntry implements ZipConstants, Cloneable {
         if (name == null) {
             throw new NullPointerException("name == null");
         }
-        if (name.length() > 0xFFFF) {
-            throw new IllegalArgumentException("Name too long: " + name.length());
-        }
+        validateStringLength("Name", name);
         this.name = name;
     }
 
@@ -184,11 +202,8 @@ public class ZipEntry implements ZipConstants, Cloneable {
             this.comment = null;
             return;
         }
+        validateStringLength("Comment", comment);
 
-        byte[] commentBytes = comment.getBytes(StandardCharsets.UTF_8);
-        if (commentBytes.length > 0xffff) {
-            throw new IllegalArgumentException("Comment too long: " + commentBytes.length);
-        }
         this.comment = comment;
     }
 
@@ -287,6 +302,17 @@ public class ZipEntry implements ZipConstants, Cloneable {
         }
     }
 
+
+    /** @hide */
+    public void setDataOffset(long value) {
+        dataOffset = value;
+    }
+
+    /** @hide */
+    public long getDataOffset() {
+        return dataOffset;
+    }
+
     /**
      * Returns the string representation of this {@code ZipEntry}.
      *
@@ -316,6 +342,7 @@ public class ZipEntry implements ZipConstants, Cloneable {
         extra = ze.extra;
         nameLength = ze.nameLength;
         localHeaderRelOffset = ze.localHeaderRelOffset;
+        dataOffset = ze.dataOffset;
     }
 
     /**
@@ -344,12 +371,14 @@ public class ZipEntry implements ZipConstants, Cloneable {
     /*
      * Internal constructor.  Creates a new ZipEntry by reading the
      * Central Directory Entry (CDE) from "in", which must be positioned
-     * at the CDE signature.
+     * at the CDE signature. If the GPBF_UTF8_FLAG is set in the CDE then
+     * UTF-8 is used to decode the string information, otherwise the
+     * defaultCharset is used.
      *
      * On exit, "in" will be positioned at the start of the next entry
      * in the Central Directory.
      */
-    ZipEntry(byte[] cdeHdrBuf, InputStream cdStream) throws IOException {
+    ZipEntry(byte[] cdeHdrBuf, InputStream cdStream, Charset defaultCharset) throws IOException {
         Streams.readFully(cdStream, cdeHdrBuf, 0, cdeHdrBuf.length);
 
         BufferIterator it = HeapBufferIterator.iterator(cdeHdrBuf, 0, cdeHdrBuf.length,
@@ -365,6 +394,13 @@ public class ZipEntry implements ZipConstants, Cloneable {
 
         if ((gpbf & ZipFile.GPBF_UNSUPPORTED_MASK) != 0) {
             throw new ZipException("Invalid General Purpose Bit Flag: " + gpbf);
+        }
+
+        // If the GPBF_UTF8_FLAG is set then the character encoding is UTF-8 whatever the default
+        // provided.
+        Charset charset = defaultCharset;
+        if ((gpbf & ZipFile.GPBF_UTF8_FLAG) != 0) {
+            charset = StandardCharsets.UTF_8;
         }
 
         compressionMethod = it.readShort() & 0xffff;
@@ -389,19 +425,17 @@ public class ZipEntry implements ZipConstants, Cloneable {
         if (containsNulByte(nameBytes)) {
             throw new ZipException("Filename contains NUL byte: " + Arrays.toString(nameBytes));
         }
-        name = new String(nameBytes, 0, nameBytes.length, StandardCharsets.UTF_8);
+        name = new String(nameBytes, 0, nameBytes.length, charset);
 
         if (extraLength > 0) {
             extra = new byte[extraLength];
             Streams.readFully(cdStream, extra, 0, extraLength);
         }
 
-        // The RI has always assumed UTF-8. (If GPBF_UTF8_FLAG isn't set, the encoding is
-        // actually IBM-437.)
         if (commentByteCount > 0) {
             byte[] commentBytes = new byte[commentByteCount];
             Streams.readFully(cdStream, commentBytes, 0, commentByteCount);
-            comment = new String(commentBytes, 0, commentBytes.length, StandardCharsets.UTF_8);
+            comment = new String(commentBytes, 0, commentBytes.length, charset);
         }
     }
 
@@ -412,5 +446,15 @@ public class ZipEntry implements ZipConstants, Cloneable {
             }
         }
         return false;
+    }
+
+    private static void validateStringLength(String argument, String string) {
+        // This check is not perfect: the character encoding is determined when the entry is
+        // written out. UTF-8 is probably a worst-case: most alternatives should be single byte per
+        // character.
+        byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length > 0xffff) {
+            throw new IllegalArgumentException(argument + " too long: " + bytes.length);
+        }
     }
 }

@@ -288,7 +288,7 @@ public class Attributes implements Cloneable, Map<Object, Object> {
      * @param value
      *            the value to store in this {@code Attributes}.
      * @return the value being stored.
-     * @exception ClassCastException
+     * @throws ClassCastException
      *                when key is not an {@code Attributes.Name} or value is not
      *                a {@code String}.
      */
@@ -307,9 +307,14 @@ public class Attributes implements Cloneable, Map<Object, Object> {
      *            Attributes}).
      */
     public void putAll(Map<?, ?> attrib) {
-        if (attrib == null || !(attrib instanceof Attributes)) {
+        if (attrib == null) {
+            throw new NullPointerException("attrib == null");
+        }
+
+        if (!(attrib instanceof Attributes)) {
             throw new ClassCastException(attrib.getClass().getName() + " not an Attributes");
         }
+
         this.map.putAll(attrib);
     }
 

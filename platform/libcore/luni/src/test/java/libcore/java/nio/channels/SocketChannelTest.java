@@ -16,26 +16,37 @@
 
 package libcore.java.nio.channels;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ConnectException;
+import java.net.Socket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.Selector;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.UnresolvedAddressException;
+import java.util.Set;
+
 import tests.io.MockOs;
-import static libcore.io.OsConstants.*;
+
+import static android.system.OsConstants.*;
 
 public class SocketChannelTest extends junit.framework.TestCase {
+
   private final MockOs mockOs = new MockOs();
 
-  @Override public void setUp() throws Exception {
+  @Override
+  public void setUp() throws Exception {
     mockOs.install();
   }
 
-  @Override protected void tearDown() throws Exception {
+  @Override
+  protected void tearDown() throws Exception {
     mockOs.uninstall();
   }
 
@@ -61,6 +72,7 @@ public class SocketChannelTest extends junit.framework.TestCase {
     }
   }
 
+  // https://code.google.com/p/android/issues/detail?id=56684
   public void test_56684() throws Exception {
     mockOs.enqueueFault("connect", ENETUNREACH);
 
@@ -78,7 +90,188 @@ public class SocketChannelTest extends junit.framework.TestCase {
 
     try {
       sc.finishConnect();
+      fail();
     } catch (ClosedChannelException expected) {
     }
+  }
+
+  /** Checks that closing a Socket's output stream also closes the Socket and SocketChannel. */
+  public void test_channelSocketOutputStreamClosureState() throws Exception {
+    ServerSocket ss = new ServerSocket(0);
+
+    SocketChannel sc = SocketChannel.open(ss.getLocalSocketAddress());
+    sc.configureBlocking(true);
+
+    Socket scSocket = sc.socket();
+    OutputStream os = scSocket.getOutputStream();
+
+    assertTrue(sc.isOpen());
+    assertFalse(scSocket.isClosed());
+
+    os.close();
+
+    assertFalse(sc.isOpen());
+    assertTrue(scSocket.isClosed());
+
+    ss.close();
+  }
+
+  /** Checks that closing a Socket's input stream also closes the Socket and SocketChannel. */
+  public void test_channelSocketInputStreamClosureState() throws Exception {
+    ServerSocket ss = new ServerSocket(0);
+
+    SocketChannel sc = SocketChannel.open(ss.getLocalSocketAddress());
+    sc.configureBlocking(true);
+
+    Socket scSocket = sc.socket();
+    InputStream is = scSocket.getInputStream();
+
+    assertTrue(sc.isOpen());
+    assertFalse(scSocket.isClosed());
+
+    is.close();
+
+    assertFalse(sc.isOpen());
+    assertTrue(scSocket.isClosed());
+
+    ss.close();
+  }
+
+  /** Checks the state of the SocketChannel and associated Socket after open() */
+  public void test_open_initialState() throws Exception {
+    SocketChannel sc = SocketChannel.open();
+    try {
+      assertNull(sc.socket().getLocalSocketAddress());
+
+      Socket socket = sc.socket();
+      assertFalse(socket.isBound());
+      assertFalse(socket.isClosed());
+      assertFalse(socket.isConnected());
+      assertEquals(-1, socket.getLocalPort());
+      assertTrue(socket.getLocalAddress().isAnyLocalAddress());
+      assertNull(socket.getLocalSocketAddress());
+      assertNull(socket.getInetAddress());
+      assertEquals(0, socket.getPort());
+      assertNull(socket.getRemoteSocketAddress());
+      assertFalse(socket.getReuseAddress());
+
+      assertSame(sc, socket.getChannel());
+    } finally {
+      sc.close();
+    }
+  }
+
+  public void test_bind_unresolvedAddress() throws IOException {
+    SocketChannel sc = SocketChannel.open();
+    try {
+      sc.socket().bind(new InetSocketAddress("unresolvedname", 31415));
+      fail();
+    } catch (IOException expected) {
+    }
+
+    assertNull(sc.socket().getLocalSocketAddress());
+    assertTrue(sc.isOpen());
+    assertFalse(sc.isConnected());
+
+    sc.close();
+  }
+
+  /** Checks that the SocketChannel and associated Socket agree on the socket state. */
+  public void test_bind_socketStateSync() throws IOException {
+    SocketChannel sc = SocketChannel.open();
+    assertNull(sc.socket().getLocalSocketAddress());
+
+    Socket socket = sc.socket();
+    assertNull(socket.getLocalSocketAddress());
+    assertFalse(socket.isBound());
+
+    InetSocketAddress bindAddr = new InetSocketAddress("localhost", 0);
+    sc.socket().bind(bindAddr);
+
+    InetSocketAddress actualAddr = (InetSocketAddress) sc.socket().getLocalSocketAddress();
+    assertEquals(actualAddr, socket.getLocalSocketAddress());
+    assertEquals(bindAddr.getHostName(), actualAddr.getHostName());
+    assertTrue(socket.isBound());
+    assertFalse(socket.isConnected());
+    assertFalse(socket.isClosed());
+
+    sc.close();
+
+    assertFalse(sc.isOpen());
+    assertTrue(socket.isClosed());
+  }
+
+  /**
+   * Checks that the SocketChannel and associated Socket agree on the socket state, even if
+   * the Socket object is requested/created after bind().
+   */
+  public void test_bind_socketObjectCreationAfterBind() throws IOException {
+    SocketChannel sc = SocketChannel.open();
+    assertNull(sc.socket().getLocalSocketAddress());
+
+    InetSocketAddress bindAddr = new InetSocketAddress("localhost", 0);
+    sc.socket().bind(bindAddr);
+
+    // Socket object creation after bind().
+    Socket socket = sc.socket();
+    InetSocketAddress actualAddr = (InetSocketAddress) sc.socket().getLocalSocketAddress();
+    assertEquals(actualAddr, socket.getLocalSocketAddress());
+    assertEquals(bindAddr.getHostName(), actualAddr.getHostName());
+    assertTrue(socket.isBound());
+    assertFalse(socket.isConnected());
+    assertFalse(socket.isClosed());
+
+    sc.close();
+
+    assertFalse(sc.isOpen());
+    assertTrue(socket.isClosed());
+  }
+
+  /**
+   * Tests connect() and object state for a blocking SocketChannel. Blocking mode is the default.
+   */
+  public void test_connect_blocking() throws Exception {
+    ServerSocket ss = new ServerSocket(0);
+
+    SocketChannel sc = SocketChannel.open();
+    assertTrue(sc.isBlocking());
+
+    assertTrue(sc.connect(ss.getLocalSocketAddress()));
+
+    assertTrue(sc.socket().isBound());
+    assertTrue(sc.isConnected());
+    assertTrue(sc.socket().isConnected());
+    assertFalse(sc.socket().isClosed());
+    assertTrue(sc.isBlocking());
+
+    ss.close();
+    sc.close();
+  }
+
+  /** Tests connect() and object state for a non-blocking SocketChannel. */
+  public void test_connect_nonBlocking() throws Exception {
+    ServerSocket ss = new ServerSocket(0);
+
+    SocketChannel sc = SocketChannel.open();
+    assertTrue(sc.isBlocking());
+    sc.configureBlocking(false);
+    assertFalse(sc.isBlocking());
+
+    if (!sc.connect(ss.getLocalSocketAddress())) {
+      do {
+        assertTrue(sc.socket().isBound());
+        assertFalse(sc.isConnected());
+        assertFalse(sc.socket().isConnected());
+        assertFalse(sc.socket().isClosed());
+      } while (!sc.finishConnect());
+    }
+    assertTrue(sc.socket().isBound());
+    assertTrue(sc.isConnected());
+    assertTrue(sc.socket().isConnected());
+    assertFalse(sc.socket().isClosed());
+    assertFalse(sc.isBlocking());
+
+    ss.close();
+    sc.close();
   }
 }

@@ -227,6 +227,14 @@ static jint System_identityHashCode(JNIEnv* env, jclass, jobject javaObject) {
 
 static JNINativeMethod gMethods[] = {
   NATIVE_METHOD(System, arraycopy, "!(Ljava/lang/Object;ILjava/lang/Object;II)V"),
+  NATIVE_METHOD(System, arraycopyCharUnchecked, "!([CI[CII)V"),
+  NATIVE_METHOD(System, arraycopyByteUnchecked, "!([BI[BII)V"),
+  NATIVE_METHOD(System, arraycopyShortUnchecked, "!([SI[SII)V"),
+  NATIVE_METHOD(System, arraycopyIntUnchecked, "!([II[III)V"),
+  NATIVE_METHOD(System, arraycopyLongUnchecked, "!([JI[JII)V"),
+  NATIVE_METHOD(System, arraycopyFloatUnchecked, "!([FI[FII)V"),
+  NATIVE_METHOD(System, arraycopyDoubleUnchecked, "!([DI[DII)V"),
+  NATIVE_METHOD(System, arraycopyBooleanUnchecked, "!([ZI[ZII)V"),
   NATIVE_METHOD(System, identityHashCode, "!(Ljava/lang/Object;)I"),
 };
 

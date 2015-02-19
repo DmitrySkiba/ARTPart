@@ -16,13 +16,9 @@
 
 package libcore.icu;
 
-import java.util.Arrays;
-import java.util.Locale;
-
 import java.util.Calendar;
-import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
-
 import static libcore.icu.DateIntervalFormat.*;
 
 public class DateIntervalFormatTest extends junit.framework.TestCase {
@@ -32,26 +28,33 @@ public class DateIntervalFormatTest extends junit.framework.TestCase {
   private static final long MONTH = 31 * DAY;
   private static final long YEAR = 12 * MONTH;
 
+  // These are the old CTS tests for DateIntervalFormat.formatDateRange.
   public void test_formatDateInterval() throws Exception {
-    Date date = new Date(109, 0, 19, 3, 30, 15);
-    long fixedTime = date.getTime();
+    TimeZone tz = TimeZone.getTimeZone("America/Los_Angeles");
 
-    int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-    Date dateWithCurrentYear = new Date(currentYear - 1900, 0, 19, 3, 30, 15);
-    long timeWithCurrentYear = dateWithCurrentYear.getTime();
+    Calendar c = Calendar.getInstance(tz, Locale.US);
+    c.set(Calendar.MONTH, Calendar.JANUARY);
+    c.set(Calendar.DAY_OF_MONTH, 19);
+    c.set(Calendar.HOUR_OF_DAY, 3);
+    c.set(Calendar.MINUTE, 30);
+    c.set(Calendar.SECOND, 15);
+    c.set(Calendar.MILLISECOND, 0);
+    long timeWithCurrentYear = c.getTimeInMillis();
+
+    c.set(Calendar.YEAR, 2009);
+    long fixedTime = c.getTimeInMillis();
+
+    c.set(Calendar.MINUTE, 0);
+    c.set(Calendar.SECOND, 0);
+    long onTheHour = c.getTimeInMillis();
 
     long noonDuration = (8 * 60 + 30) * 60 * 1000 - 15 * 1000;
     long midnightDuration = (3 * 60 + 30) * 60 * 1000 + 15 * 1000;
-    long integralDuration = 30 * 60 * 1000 + 15 * 1000;
-
-    // These are the old CTS tests for DateIntervalFormat.formatDateRange.
 
     Locale de_DE = new Locale("de", "DE");
     Locale en_US = new Locale("en", "US");
     Locale es_ES = new Locale("es", "ES");
     Locale es_US = new Locale("es", "US");
-
-    TimeZone tz = TimeZone.getTimeZone("America/Los_Angeles");
 
     assertEquals("Monday", formatDateRange(en_US, tz, fixedTime, fixedTime + HOUR, FORMAT_SHOW_WEEKDAY));
     assertEquals("January 19", formatDateRange(en_US, tz, timeWithCurrentYear, timeWithCurrentYear + HOUR, FORMAT_SHOW_DATE));
@@ -67,7 +70,7 @@ public class DateIntervalFormatTest extends junit.framework.TestCase {
     assertEquals("12:00 PM", formatDateRange(en_US, tz, fixedTime + noonDuration, fixedTime + noonDuration, FORMAT_12HOUR /*| FORMAT_NO_NOON*/ | FORMAT_SHOW_TIME));
     assertEquals("12:00 AM", formatDateRange(en_US, tz, fixedTime - midnightDuration, fixedTime - midnightDuration, FORMAT_12HOUR | FORMAT_SHOW_TIME /*| FORMAT_NO_MIDNIGHT*/));
     assertEquals("3:30 AM", formatDateRange(en_US, tz, fixedTime, fixedTime, FORMAT_SHOW_TIME | FORMAT_UTC));
-    assertEquals("3 AM", formatDateRange(en_US, tz, fixedTime - integralDuration, fixedTime - integralDuration, FORMAT_SHOW_TIME | FORMAT_ABBREV_TIME));
+    assertEquals("3 AM", formatDateRange(en_US, tz, onTheHour, onTheHour, FORMAT_SHOW_TIME | FORMAT_ABBREV_TIME));
     assertEquals("Mon", formatDateRange(en_US, tz, fixedTime, fixedTime + HOUR, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_WEEKDAY));
     assertEquals("Jan 19", formatDateRange(en_US, tz, timeWithCurrentYear, timeWithCurrentYear + HOUR, FORMAT_SHOW_DATE | FORMAT_ABBREV_MONTH));
     assertEquals("Jan 19", formatDateRange(en_US, tz, timeWithCurrentYear, timeWithCurrentYear + HOUR, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
@@ -83,26 +86,26 @@ public class DateIntervalFormatTest extends junit.framework.TestCase {
     assertEquals("19.01.2009 - 09.02.2012", formatDateRange(de_DE, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
 
     assertEquals("1/19/2009", formatDateRange(es_US, tz, fixedTime, fixedTime + HOUR, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
-    assertEquals("19/1/2009 – 22/1/2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
-    assertEquals("19/1/2009 – 22/4/2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
-    assertEquals("19/1/2009 – 9/2/2012", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
+    assertEquals("19/1/2009–22/1/2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
+    assertEquals("19/1/2009–22/4/2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
+    assertEquals("19/1/2009–9/2/2012", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
 
     assertEquals("19/1/2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + HOUR, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
-    assertEquals("19/1/2009 – 22/1/2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
-    assertEquals("19/1/2009 – 22/4/2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
-    assertEquals("19/1/2009 – 9/2/2012", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
+    assertEquals("19/1/2009–22/1/2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
+    assertEquals("19/1/2009–22/4/2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
+    assertEquals("19/1/2009–9/2/2012", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_YEAR | FORMAT_NUMERIC_DATE));
 
     // These are some random other test cases I came up with.
 
-    assertEquals("January 19–22, 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * DAY, 0));
-    assertEquals("Jan 19–22, 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
+    assertEquals("January 19 – 22, 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * DAY, 0));
+    assertEquals("Jan 19 – 22, 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
     assertEquals("Mon, Jan 19 – Thu, Jan 22, 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_ALL));
     assertEquals("Monday, January 19 – Thursday, January 22, 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_WEEKDAY));
 
     assertEquals("January 19 – April 22, 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * MONTH, 0));
     assertEquals("Jan 19 – Apr 22, 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
     assertEquals("Mon, Jan 19 – Wed, Apr 22, 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_ALL));
-    assertEquals("January–April 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_NO_MONTH_DAY));
+    assertEquals("January – April 2009", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_NO_MONTH_DAY));
 
     assertEquals("Jan 19, 2009 – Feb 9, 2012", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
     assertEquals("Jan 2009 – Feb 2012", formatDateRange(en_US, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_NO_MONTH_DAY | FORMAT_ABBREV_ALL));
@@ -129,36 +132,36 @@ public class DateIntervalFormatTest extends junit.framework.TestCase {
     // The same tests but for es_US.
 
     assertEquals("19–22 enero 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * DAY, 0));
-    assertEquals("19–22 ene 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
-    assertEquals("lun 19 ene – jue 22 ene 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_ALL));
-    assertEquals("lunes 19 enero – jueves 22 enero 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_WEEKDAY));
+    assertEquals("19–22 ene. 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
+    assertEquals("lun., 19 ene.–jue., 22 ene. de 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_ALL));
+    assertEquals("lunes, 19 enero–jueves, 22 enero de 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_WEEKDAY));
 
-    assertEquals("19 enero – 22 abril 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * MONTH, 0));
-    assertEquals("19 ene – 22 abr 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
-    assertEquals("lun 19 ene – mié 22 abr 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_ALL));
-    assertEquals("enero–abril 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_NO_MONTH_DAY));
+    assertEquals("19 enero–22 abril de 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * MONTH, 0));
+    assertEquals("19 ene.–22 abr. de 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
+    assertEquals("lun., 19 ene.–mié., 22 abr. de 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_ALL));
+    assertEquals("enero–abril de 2009", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_NO_MONTH_DAY));
 
-    assertEquals("19 ene 2009 – 9 feb 2012", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
-    assertEquals("ene 2009 – feb 2012", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_NO_MONTH_DAY | FORMAT_ABBREV_ALL));
-    assertEquals("19 enero 2009 – 9 febrero 2012", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * YEAR, 0));
-    assertEquals("lunes 19 enero 2009 – jueves 9 febrero 2012", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_WEEKDAY));
+    assertEquals("19 ene. de 2009–9 feb. de 2012", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
+    assertEquals("ene. 2009–feb. 2012", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_NO_MONTH_DAY | FORMAT_ABBREV_ALL));
+    assertEquals("19 enero de 2009–9 febrero de 2012", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * YEAR, 0));
+    assertEquals("lunes, 19 enero de 2009–jueves, 9 febrero de 2012", formatDateRange(es_US, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_WEEKDAY));
 
     // The same tests but for es_ES.
 
     assertEquals("19–22 enero 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * DAY, 0));
-    assertEquals("19–22 ene 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
-    assertEquals("lun 19 ene – jue 22 ene 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_ALL));
-    assertEquals("lunes 19 enero – jueves 22 enero 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_WEEKDAY));
+    assertEquals("19–22 ene. 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
+    assertEquals("lun., 19 ene.–jue., 22 ene. de 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_ALL));
+    assertEquals("lunes, 19 enero–jueves, 22 enero de 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * DAY, FORMAT_SHOW_WEEKDAY));
 
-    assertEquals("19 enero – 22 abril 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * MONTH, 0));
-    assertEquals("19 ene – 22 abr 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
-    assertEquals("lun 19 ene – mié 22 abr 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_ALL));
-    assertEquals("enero–abril 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_NO_MONTH_DAY));
+    assertEquals("19 enero–22 abril de 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * MONTH, 0));
+    assertEquals("19 ene.–22 abr. de 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
+    assertEquals("lun., 19 ene.–mié., 22 abr. de 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_SHOW_WEEKDAY | FORMAT_ABBREV_ALL));
+    assertEquals("enero–abril de 2009", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * MONTH, FORMAT_NO_MONTH_DAY));
 
-    assertEquals("19 ene 2009 – 9 feb 2012", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
-    assertEquals("ene 2009 – feb 2012", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_NO_MONTH_DAY | FORMAT_ABBREV_ALL));
-    assertEquals("19 enero 2009 – 9 febrero 2012", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * YEAR, 0));
-    assertEquals("lunes 19 enero 2009 – jueves 9 febrero 2012", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_WEEKDAY));
+    assertEquals("19 ene. de 2009–9 feb. de 2012", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL));
+    assertEquals("ene. 2009–feb. 2012", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_NO_MONTH_DAY | FORMAT_ABBREV_ALL));
+    assertEquals("19 enero de 2009–9 febrero de 2012", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * YEAR, 0));
+    assertEquals("lunes, 19 enero de 2009–jueves, 9 febrero de 2012", formatDateRange(es_ES, tz, fixedTime, fixedTime + 3 * YEAR, FORMAT_SHOW_WEEKDAY));
   }
 
   // http://b/8862241 - we should be able to format dates past 2038.
@@ -166,8 +169,12 @@ public class DateIntervalFormatTest extends junit.framework.TestCase {
   public void test8862241() throws Exception {
     Locale l = Locale.US;
     TimeZone tz = TimeZone.getTimeZone("America/Los_Angeles");
-    long jan_19_2042 = new Date(2042 - 1900, 0, 19, 3, 30, 15).getTime();
-    long oct_4_2046 = new Date(2046 - 1900, 9, 4, 3, 30, 15).getTime();
+    Calendar c = Calendar.getInstance(tz, l);
+    c.clear();
+    c.set(2042, Calendar.JANUARY, 19, 3, 30);
+    long jan_19_2042 = c.getTimeInMillis();
+    c.set(2046, Calendar.OCTOBER, 4, 3, 30);
+    long oct_4_2046 = c.getTimeInMillis();
     int flags = FORMAT_SHOW_DATE | FORMAT_ABBREV_ALL;
     assertEquals("Jan 19, 2042 – Oct 4, 2046", formatDateRange(l, tz, jan_19_2042, oct_4_2046, flags));
   }
@@ -212,11 +219,11 @@ public class DateIntervalFormatTest extends junit.framework.TestCase {
     assertEquals("4 PM", formatDateRange(l, utc, teaTime, teaTime, abbr12));
 
     // Abbreviated on-the-hour ranges.
-    assertEquals("00:00–16:00", formatDateRange(l, utc, midnight, teaTime, abbr24));
+    assertEquals("00:00 – 16:00", formatDateRange(l, utc, midnight, teaTime, abbr24));
     assertEquals("12 AM – 4 PM", formatDateRange(l, utc, midnight, teaTime, abbr12));
 
     // Abbreviated mixed ranges.
-    assertEquals("00:00–16:01", formatDateRange(l, utc, midnight, teaTime + MINUTE, abbr24));
+    assertEquals("00:00 – 16:01", formatDateRange(l, utc, midnight, teaTime + MINUTE, abbr24));
     assertEquals("12:00 AM – 4:01 PM", formatDateRange(l, utc, midnight, teaTime + MINUTE, abbr12));
   }
 
@@ -252,8 +259,47 @@ public class DateIntervalFormatTest extends junit.framework.TestCase {
 
     int flags = FORMAT_SHOW_TIME | FORMAT_24HOUR | FORMAT_SHOW_DATE;
 
-    assertEquals("January 1, 1970, 22:00–00:00", formatDateRange(l, utc, 22 * HOUR, 24 * HOUR, flags));
+    assertEquals("January 1, 1970, 22:00 – 00:00", formatDateRange(l, utc, 22 * HOUR, 24 * HOUR, flags));
     assertEquals("January 1, 1970, 22:00 – January 2, 1970, 00:30", formatDateRange(l, utc, 22 * HOUR, 24 * HOUR + 30 * MINUTE, flags));
+  }
+
+  // The fix for http://b/10560853 didn't work except for the day around the epoch, which was
+  // all the unit test checked!
+  public void test_single_day_events_later_than_epoch() throws Exception {
+    Locale l = Locale.US;
+    TimeZone utc = TimeZone.getTimeZone("UTC");
+
+    int flags = FORMAT_SHOW_TIME | FORMAT_24HOUR | FORMAT_SHOW_DATE;
+
+    Calendar c = Calendar.getInstance(utc, l);
+    c.clear();
+    c.set(1980, Calendar.JANUARY, 1, 0, 0);
+    long jan_1_1980 = c.getTimeInMillis();
+    assertEquals("January 1, 1980, 22:00 – 00:00",
+                 formatDateRange(l, utc, jan_1_1980 + 22 * HOUR, jan_1_1980 + 24 * HOUR, flags));
+    assertEquals("January 1, 1980, 22:00 – January 2, 1980, 00:30",
+                 formatDateRange(l, utc, jan_1_1980 + 22 * HOUR, jan_1_1980 + 24 * HOUR + 30 * MINUTE, flags));
+  }
+
+  // The fix for http://b/10560853 didn't work except for UTC, which was
+  // all the unit test checked!
+  public void test_single_day_events_not_in_UTC() throws Exception {
+    Locale l = Locale.US;
+    TimeZone pacific = TimeZone.getTimeZone("America/Los_Angeles");
+
+    int flags = FORMAT_SHOW_TIME | FORMAT_24HOUR | FORMAT_SHOW_DATE;
+
+    Calendar c = Calendar.getInstance(pacific, l);
+    c.clear();
+    c.set(1980, Calendar.JANUARY, 1, 0, 0);
+    long jan_1_1980 = c.getTimeInMillis();
+    assertEquals("January 1, 1980, 22:00 – 00:00",
+                 formatDateRange(l, pacific, jan_1_1980 + 22 * HOUR, jan_1_1980 + 24 * HOUR, flags));
+
+    c.set(1980, Calendar.JULY, 1, 0, 0);
+    long jul_1_1980 = c.getTimeInMillis();
+    assertEquals("July 1, 1980, 22:00 – 00:00",
+                 formatDateRange(l, pacific, jul_1_1980 + 22 * HOUR, jul_1_1980 + 24 * HOUR, flags));
   }
 
   // http://b/10209343 - even if the caller didn't explicitly ask us to include the year,
@@ -284,7 +330,7 @@ public class DateIntervalFormatTest extends junit.framework.TestCase {
     // Construct a date in the current year (whenever the test happens to be run).
     Locale l = Locale.US;
     TimeZone utc = TimeZone.getTimeZone("UTC");
-    Calendar c = Calendar.getInstance(utc);
+    Calendar c = Calendar.getInstance(utc, l);
     c.set(Calendar.MONTH, Calendar.FEBRUARY);
     c.set(Calendar.DAY_OF_MONTH, 10);
     c.set(Calendar.HOUR_OF_DAY, 0);
@@ -313,5 +359,53 @@ public class DateIntervalFormatTest extends junit.framework.TestCase {
     // (And you can't avoid that --- icu4c steps in and overrides you.)
     assertEquals(String.format("February 10, 1980 – February 10, %d", c.get(Calendar.YEAR)),
                  formatDateRange(l, utc, oldYear, thisYear, FORMAT_SHOW_DATE | FORMAT_NO_YEAR));
+  }
+
+  // http://b/8467515 - yet another y2k38 bug report.
+  public void test8467515() throws Exception {
+    Locale l = Locale.US;
+    TimeZone utc = TimeZone.getTimeZone("UTC");
+    int flags = FORMAT_SHOW_DATE | FORMAT_SHOW_WEEKDAY | FORMAT_SHOW_YEAR | FORMAT_ABBREV_MONTH | FORMAT_ABBREV_WEEKDAY;
+    long t;
+
+    Calendar calendar = Calendar.getInstance(utc, l);
+    calendar.clear();
+
+    calendar.set(2038, Calendar.JANUARY, 19, 12, 0, 0);
+    t = calendar.getTimeInMillis();
+    assertEquals("Tue, Jan 19, 2038", formatDateRange(l, utc, t, t, flags));
+
+    calendar.set(1900, Calendar.JANUARY, 1, 0, 0, 0);
+    t = calendar.getTimeInMillis();
+    assertEquals("Mon, Jan 1, 1900", formatDateRange(l, utc, t, t, flags));
+  }
+
+  // http://b/12004664
+  public void test12004664() throws Exception {
+    TimeZone utc = TimeZone.getTimeZone("UTC");
+    Calendar c = Calendar.getInstance(utc, Locale.US);
+    c.clear();
+    c.set(Calendar.YEAR, 1980);
+    c.set(Calendar.MONTH, Calendar.FEBRUARY);
+    c.set(Calendar.DAY_OF_MONTH, 10);
+    c.set(Calendar.HOUR_OF_DAY, 0);
+    long thisYear = c.getTimeInMillis();
+
+    int flags = FORMAT_SHOW_DATE | FORMAT_SHOW_WEEKDAY | FORMAT_SHOW_YEAR;
+    assertEquals("Sunday, February 10, 1980", formatDateRange(new Locale("en", "US"), utc, thisYear, thisYear, flags));
+
+    // If we supported non-Gregorian calendars, this is what that we'd expect for these locales.
+    // This is really the correct behavior, but since java.util.Calendar currently only supports
+    // the Gregorian calendar, we want to deliberately force icu4c to agree, otherwise we'd have
+    // a mix of calendars throughout an app's UI depending on whether Java or native code formatted
+    // the date.
+    // assertEquals("یکشنبه ۲۱ بهمن ۱۳۵۸ ه‍.ش.", formatDateRange(new Locale("fa"), utc, thisYear, thisYear, flags));
+    // assertEquals("AP ۱۳۵۸ سلواغه ۲۱, یکشنبه", formatDateRange(new Locale("ps"), utc, thisYear, thisYear, flags));
+    // assertEquals("วันอาทิตย์ 10 กุมภาพันธ์ 2523", formatDateRange(new Locale("th"), utc, thisYear, thisYear, flags));
+
+    // For now, here are the localized Gregorian strings instead...
+    assertEquals("یکشنبه ۱۰ فوریهٔ ۱۹۸۰", formatDateRange(new Locale("fa"), utc, thisYear, thisYear, flags));
+    assertEquals("یکشنبه د ۱۹۸۰ د فبروري ۱۰", formatDateRange(new Locale("ps"), utc, thisYear, thisYear, flags));
+    assertEquals("วันอาทิตย์ 10 กุมภาพันธ์ 1980", formatDateRange(new Locale("th"), utc, thisYear, thisYear, flags));
   }
 }

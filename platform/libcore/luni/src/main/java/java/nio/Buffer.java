@@ -85,22 +85,16 @@ public abstract class Buffer {
     /**
      * For direct buffers, the effective address of the data; zero otherwise.
      * This is set in the constructor.
-     * TODO: make this final at the cost of loads of extra constructors? [how many?]
      */
-    long effectiveDirectAddress;
+    final long effectiveDirectAddress;
 
-    /**
-     * For direct buffers, the underlying MemoryBlock; null otherwise.
-     */
-    final MemoryBlock block;
-
-    Buffer(int elementSizeShift, int capacity, MemoryBlock block) {
+    Buffer(int elementSizeShift, int capacity, long effectiveDirectAddress) {
         this._elementSizeShift = elementSizeShift;
         if (capacity < 0) {
             throw new IllegalArgumentException("capacity < 0: " + capacity);
         }
         this.capacity = this.limit = capacity;
-        this.block = block;
+        this.effectiveDirectAddress = effectiveDirectAddress;
     }
 
     /**
@@ -296,7 +290,7 @@ public abstract class Buffer {
      *            the new limit, must not be negative and not greater than
      *            capacity.
      * @return this buffer.
-     * @exception IllegalArgumentException
+     * @throws IllegalArgumentException
      *                if <code>newLimit</code> is invalid.
      */
     public final Buffer limit(int newLimit) {
@@ -344,7 +338,7 @@ public abstract class Buffer {
      *            the new position, must be not negative and not greater than
      *            limit.
      * @return this buffer.
-     * @exception IllegalArgumentException
+     * @throws IllegalArgumentException
      *                if <code>newPosition</code> is invalid.
      */
     public final Buffer position(int newPosition) {
@@ -377,7 +371,7 @@ public abstract class Buffer {
      * Resets the position of this buffer to the <code>mark</code>.
      *
      * @return this buffer.
-     * @exception InvalidMarkException
+     * @throws InvalidMarkException
      *                if the mark is not set.
      */
     public final Buffer reset() {
@@ -408,5 +402,10 @@ public abstract class Buffer {
     @Override public String toString() {
         return getClass().getName() +
             "[position=" + position + ",limit=" + limit + ",capacity=" + capacity + "]";
+    }
+
+    /** @hide for testing only */
+    public final int getElementSizeShift() {
+        return _elementSizeShift;
     }
 }

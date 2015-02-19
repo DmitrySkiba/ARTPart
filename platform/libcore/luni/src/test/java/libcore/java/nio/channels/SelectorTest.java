@@ -15,6 +15,7 @@
  */
 package libcore.java.nio.channels;
 
+import android.system.OsConstants;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -26,9 +27,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import libcore.io.Libcore;
-import libcore.io.OsConstants;
 import junit.framework.TestCase;
+import libcore.io.Libcore;
 import tests.net.StuckServer;
 
 public class SelectorTest extends TestCase {
@@ -93,11 +93,15 @@ public class SelectorTest extends TestCase {
     // http://code.google.com/p/android/issues/detail?id=15388
     public void testInterrupted() throws IOException {
         Selector selector = Selector.open();
+        Thread.currentThread().interrupt();
         try {
-            Thread.currentThread().interrupt();
             int count = selector.select();
             assertEquals(0, count);
+            assertTrue(Thread.currentThread().isInterrupted());
         } finally {
+            // Clear the interrupted thread state so that it does not interfere with later tests.
+            Thread.interrupted();
+
             selector.close();
         }
     }
