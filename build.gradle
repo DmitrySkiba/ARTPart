@@ -111,6 +111,7 @@ task wrapper(type: Wrapper) {
 }
 
 task bootOat {
+    inputs.file dex2oatFile
     inputs.file configurations.allDexedJars
     outputs.file bootArtFile
     outputs.file bootOatFile
@@ -122,7 +123,7 @@ task bootOat {
             args "--android-root=${relativize(androidFSRoot, androidRootPath)}"
             args '--runtime-arg', '-Xms64m'
             args '--runtime-arg', '-Xmx64m'
-            inputs.files.each { dexedJar ->
+            configurations.allDexedJars.files.each { dexedJar ->
                 args "--dex-file=${relativize(androidFSRoot, dexedJar)}"
             }
             args "--base=$bootOatBase"
