@@ -17,7 +17,7 @@
 # compile_jar.source_exclude_filters    array
 # compile_jar.resource_paths            array
 # compile_jar.manifest_file
-# compile_jar.boot_class_paths          REQUIRED, array
+# compile_jar.boot_class_paths          array
 # compile_jar.jar_file                  REQUIRED
 # compile_jar.jar_include_filters       array
 # compile_jar.jarjar_tool
@@ -29,6 +29,7 @@
   'variables': {
     'my_path': '.',
 
+    'compile_jar.boot_class_paths%': [],
     'compile_jar.source_exclude_filters%': [],
     'compile_jar.manifest_file%': '',
     'compile_jar.resource_paths%': [],

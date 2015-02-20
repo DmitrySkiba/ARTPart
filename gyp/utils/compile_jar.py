@@ -94,9 +94,9 @@ def _compile_and_jar(options):
   ]
 
   boot_class_files = _find_boot_class_files(options)
-  if boot_class_files:
+  if boot_class_files is not None:
     javac_cmd.append('-bootclasspath')
-    if boot_class_files == ['']:
+    if boot_class_files == []:
       javac_cmd.append(':')
     else:
       javac_cmd.append(':'.join(boot_class_files))

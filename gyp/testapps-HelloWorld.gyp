@@ -33,7 +33,6 @@
       'type': 'none',
 
       'dependencies': [
-        '<!(<(dependency) libcore-rt_jar)',
         '<!(<(dependency) boot_oat)',
       ],
 
@@ -41,7 +40,6 @@
         'compile_jar.source_paths': [
           '<(local_root)/HelloWorld.java',
         ],
-        'compile_jar.boot_class_paths': '>(dependencies.jar_files)',
         'compile_jar.jar_file': '<(jar_path)',
 
         'dex.jar_file': '<(jar_path)',

@@ -25,7 +25,6 @@
       'dependencies': [
         '<!(<(dependency) testapps-HelloWorld)',
 
-        '<!(<(dependency) libcore-rt_jar)',
         '<!(<(dependency) art-dalvikvm)',
         '<!(<(dependency) art-dex2oat)',
         '<!(<(dependency) art-oatdump)',

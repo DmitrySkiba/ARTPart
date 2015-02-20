@@ -42,7 +42,7 @@
           '<(local_root)/luni/src/main/java',
           '<(local_root)/luni/src/main/resources',
         ],
-        'compile_jar.boot_class_paths': [ '' ],
+        'compile_jar.boot_class_paths': [ ':' ],
         'compile_jar.jar_file': '<(jar_path)',
 
         'dex.jar_file': '<(jar_path)',
