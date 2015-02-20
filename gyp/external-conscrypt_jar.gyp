@@ -19,12 +19,12 @@
   ],
 
   'variables': {
-    'local_root': '<(platform_root)/libcore/crypto',
+    'local_root': '<(platform_root)/external/conscrypt',
   },
 
   'targets': [
     {
-      'target_name': 'libcore-conscrypt_jar<(any_variant)',
+      'target_name': 'external-conscrypt_jar<(any_variant)',
       'type': 'none',
 
       'dependencies': [
@@ -37,6 +37,7 @@
 
         'compile_jar.source_paths': [
           '<(local_root)/src/main/java',
+          '<(local_root)/src/platform/java',
         ],
         'compile_jar.boot_class_paths': '>(dependencies.jar_files)',
         'compile_jar.jar_file': '<(jar_path)',

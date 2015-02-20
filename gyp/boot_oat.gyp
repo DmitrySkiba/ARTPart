@@ -60,7 +60,7 @@
           'variables': {
             'jar_dependencies': [
               '<!(<(dependency) libcore-rt_jar)',
-              '<!(<(dependency) libcore-conscrypt_jar)',
+              '<!(<(dependency) external-conscrypt_jar)',
             ],
           },
 
