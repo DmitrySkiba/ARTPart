@@ -24,7 +24,7 @@
 
   'targets': [
     {
-      'target_name': 'art-compiler<(any_variant)',
+      'target_name': 'art-compiler',
       'product_name': 'compiler',
       'type': 'static_library',
 
@@ -36,7 +36,7 @@
         '<!(<(dependency) libnativehelper)',
         '<!(<(dependency) libcurses)',
         '<!(<(dependency) external-valgrind)',
-        'external-gtest.gyp:external-gtest-include<(any_variant)', # TODO improve <(dependency)
+        'external-gtest.gyp:external-gtest-include',
       ],
 
       'sources': [

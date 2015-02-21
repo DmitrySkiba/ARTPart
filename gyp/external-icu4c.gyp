@@ -23,7 +23,7 @@
 
   'targets': [
     {
-      'target_name': 'external-icu4c<(any_variant)',
+      'target_name': 'external-icu4c',
       'product_name': 'icu4c',
       'type': 'static_library',
 

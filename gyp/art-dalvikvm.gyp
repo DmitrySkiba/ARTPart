@@ -20,7 +20,7 @@
 
   'targets': [
     {
-      'target_name': 'art-dalvikvm<(host_variant)',
+      'target_name': 'art-dalvikvm',
       'product_name': 'dalvikvm',
       'type': 'executable',
 

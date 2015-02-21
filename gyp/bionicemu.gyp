@@ -23,7 +23,7 @@
 
   'targets': [
     {
-      'target_name': 'bionicemu<(any_variant)',
+      'target_name': 'bionicemu',
       'type': 'static_library',
 
       # Kill dependency on ourselves inherited from common.gypi

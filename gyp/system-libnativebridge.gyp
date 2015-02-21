@@ -24,7 +24,7 @@
 
   'targets': [
     {
-      'target_name': 'system-libnativebridge<(any_variant)',
+      'target_name': 'system-libnativebridge',
       'product_name': 'libnativebridge',
       'type': 'static_library',
 

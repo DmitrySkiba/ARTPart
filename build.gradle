@@ -33,7 +33,7 @@ apply from: 'settings.gradle'
 ext {
     architecture = 'x86'
 
-    outRoot = new File(rootPath, "out/host")
+    outRoot = new File(rootPath, "out")
     buildRoot = new File(outRoot, 'build/gradle')
 
     productRoot = new File(outRoot, 'product')

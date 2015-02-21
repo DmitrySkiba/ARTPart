@@ -19,7 +19,7 @@
 
   'targets': [
     {
-      'target_name': 'system-include<(any_variant)',
+      'target_name': 'system-include',
       'type': 'none',
 
       'direct_dependent_settings': {

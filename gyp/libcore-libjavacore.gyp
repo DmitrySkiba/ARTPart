@@ -23,7 +23,7 @@
 
   'targets': [
     {
-      'target_name': 'libcore-libjavacore<(any_variant)',
+      'target_name': 'libcore-libjavacore',
       'product_name': 'libjavacore',
       'type': 'static_library',
 

@@ -23,7 +23,7 @@
 
   'targets': [
     {
-      'target_name': 'frameworks-include<(any_variant)',
+      'target_name': 'frameworks-include',
       'type': 'none',
 
       'direct_dependent_settings': {

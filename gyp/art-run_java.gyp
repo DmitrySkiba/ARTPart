@@ -20,7 +20,7 @@
 
   'targets': [
     {
-      'target_name': 'art-run_java<(any_variant)',
+      'target_name': 'art-run_java',
       'product_name': 'run_java',
       'type': 'static_library',
 

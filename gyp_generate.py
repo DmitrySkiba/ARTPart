@@ -82,64 +82,47 @@ def main(arguments):
   root_path = os.getcwd()
   projects_path = os.path.join(root_path, 'projects')
   generator_output_path = os.path.join(projects_path, generator)
-  out_path = os.path.join(root_path, 'out')
+  out_root = os.path.join(root_path, 'out')
 
   # Delete output directories
   if not options.update:
-    build_utils.delete_directory(out_path)
+    build_utils.delete_directory(out_root)
     build_utils.delete_directory(generator_output_path)
 
-  # Generator helper
-  def generate(variant):
-
-    main_gyp_file = 'out'
-    variant_suffix = '@' + variant
-
-    os_variant = None # see default in common.gypi
-    if variant == 'host':
-      sdk = 'macosx10.9'
-      arch = 'i386'
-    else:
-      sdk = 'iphonesimulator'
-      arch = 'i386'
-      os_variant = 'ios'
-
-    out_root = os.path.join(out_path, variant) # out_root in common.gypi
-    build_utils.make_directory(out_root)
-
-    environ = build_environ.generate(sdk, arch, android_sdk_root, android_api)
-    build_environ.dump(environ, os.path.join(out_root, 'build_environ.json'))
-
-    gyp_arguments = [
-      '-f', generator,
-      '-D', 'root_path=' + root_path,
-      '-D', 'variant=' + variant,
-      '-D', 'using_gradle=' + str(int(options.using_gradle)),
-    ]
-
-    if os_variant:
-      gyp_arguments += [ '-D', 'OS_variant=' + os_variant ]
-
-    for key, value in environ.iteritems():
-      gyp_arguments += [ '-D', key + '=' + value ]
-
-    if options.debug_gyp:
-      gyp_arguments += [ '-d', 'all' ]
-
-    gyp_arguments += [
-      '--depth', '.',
-      '--generator-output', generator_output_path,
-      '--suffix', variant_suffix,
-      '{}.gyp'.format(main_gyp_file),
-    ]
-
-    gyp.main(gyp_arguments)
-
   # Generate projects
-  os.chdir('gyp')
-  generate('host')
-  #generate('target')
 
+  main_gyp_file = 'out'
+
+  sdk = 'macosx10.9'
+  arch = 'i386'
+
+  build_utils.make_directory(out_root)
+
+  environ = build_environ.generate(sdk, arch, android_sdk_root, android_api)
+  build_environ.dump(environ, os.path.join(out_root, 'build_environ.json'))
+
+  gyp_arguments = [
+    '-f', generator,
+    '-D', 'root_path=' + root_path,
+    '-D', 'using_gradle=' + str(int(options.using_gradle)),
+  ]
+
+  for key, value in environ.iteritems():
+    gyp_arguments += [ '-D', key + '=' + value ]
+
+  if options.debug_gyp:
+    gyp_arguments += [ '-d', 'all' ]
+
+  gyp_arguments += [
+    '--depth', '.',
+    '--generator-output', generator_output_path,
+    '{}.gyp'.format(main_gyp_file),
+  ]
+
+  os.chdir('gyp')
+  gyp.main(gyp_arguments)
+
+  # Generate Xcode workspace
   if generator == 'xcode':
     _generate_xcode_workspace(generator_output_path,
                               os.path.join(generator_output_path, 'ARTPart.xcworkspace'))

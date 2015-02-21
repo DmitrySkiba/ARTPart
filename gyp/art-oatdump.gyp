@@ -20,7 +20,7 @@
 
   'targets': [
     {
-      'target_name': 'art-oatdump<(host_variant)',
+      'target_name': 'art-oatdump',
       'product_name': 'oatdump',
       'type': 'executable',
 

@@ -24,7 +24,7 @@
 
   'targets': [
     {
-      'target_name': 'external-expat<(any_variant)',
+      'target_name': 'external-expat',
       'product_name': 'expat',
       'type': 'static_library',
 

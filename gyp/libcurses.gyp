@@ -19,7 +19,7 @@
 
   'targets': [
     {
-      'target_name': 'libcurses<(any_variant)',
+      'target_name': 'libcurses',
 
       'conditions': [
         [ 'OS == "mac"', {

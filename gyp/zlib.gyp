@@ -23,7 +23,7 @@
 
   'targets': [
     {
-      'target_name': 'zlib<(any_variant)', # TODO rename to libz
+      'target_name': 'zlib', # TODO rename to libz
 
       'conditions': [
         [ 'OS == "mac"', {

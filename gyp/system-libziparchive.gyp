@@ -24,7 +24,7 @@
 
   'targets': [
     {
-      'target_name': 'system-libziparchive<(any_variant)',
+      'target_name': 'system-libziparchive',
       'product_name': 'libziparchive',
       'type': 'static_library',
 

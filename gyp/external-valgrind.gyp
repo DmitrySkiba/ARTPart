@@ -23,7 +23,7 @@
 
   'targets': [
     {
-      'target_name': 'external-valgrind<(any_variant)',
+      'target_name': 'external-valgrind',
       'product_name': 'valgrind',
       'type': 'none',
 

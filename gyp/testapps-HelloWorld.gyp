@@ -29,7 +29,7 @@
 
   'targets': [
     {
-      'target_name': 'testapps-HelloWorld-jar<(any_variant)',
+      'target_name': 'testapps-HelloWorld-jar',
       'type': 'none',
 
       'dependencies': [
@@ -48,13 +48,14 @@
       'includes': [ 'utils/compile_jar.gypi', 'utils/dex.gypi' ],
     },
     {
-      'target_name': 'testapps-HelloWorld<(any_variant)',
+      'target_name': 'testapps-HelloWorld',
       'product_name': 'HelloWorld',
       'type': 'executable',
 
       'dependencies': [
-        'testapps-HelloWorld-jar<(any_variant)',
+        'testapps-HelloWorld-jar',
         '<!(<(dependency) art-run_java)',
+        '<!(<(dependency) art-dex2oat)',
       ],
 
       'defines': [
@@ -63,25 +64,6 @@
 
       'sources': [
         '<(local_root)/hello_world.cc'
-      ],
-
-      'conditions': [
-        [ 'variant == "host"', {
-          'dependencies': [
-            '<!(<(dependency) art-dex2oat)',
-          ],
-        }],
-        [ 'OS_variant == "ios"', {
-          'mac_bundle': 1,
-          'sources=': [
-            '<(local_root)/hello_world.mm',
-          ],
-          'xcode_settings': {
-            'IPHONEOS_DEPLOYMENT_TARGET': '<(BUILD_SDK_VERSION)',
-            'TARGETED_DEVICE_FAMILY': '1,2',
-            'INFOPLIST_FILE': '<(local_root)/Info.plist',
-          },
-        }],
       ],
 
       'actions': [

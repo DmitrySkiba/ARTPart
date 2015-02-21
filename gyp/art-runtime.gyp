@@ -24,7 +24,7 @@
 
   'targets': [
     {
-      'target_name': 'art-runtime<(any_variant)',
+      'target_name': 'art-runtime',
       'product_name': 'runtime',
       'type': 'static_library',
 
@@ -39,13 +39,13 @@
         '<!(<(dependency) libcore-libjavacore)',
         '<!(<(dependency) zlib)',
         '<!(<(dependency) external-valgrind)',
-        'external-gtest.gyp:external-gtest-include<(any_variant)', # TODO improve <(dependency)
+        'external-gtest.gyp:external-gtest-include',
       ],
 
       'export_dependent_settings': [
         '<!(<(dependency) libnativehelper)',
         '<!(<(dependency) system-libziparchive)',
-        'external-gtest.gyp:external-gtest-include<(any_variant)', # TODO improve <(dependency)
+        'external-gtest.gyp:external-gtest-include',
       ],
 
       'all_dependent_settings': {

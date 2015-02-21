@@ -50,7 +50,7 @@ def main(arguments):
 
   root_path = os.getcwd()
 
-  out_root = os.path.join(root_path, 'out', 'host')
+  out_root = os.path.join(root_path, 'out')
   environ_file = os.path.join(out_root, 'build_environ.json')
   boot_class_path = os.path.join(out_root, 'jars')
   product_root = os.path.join(out_root, 'product')

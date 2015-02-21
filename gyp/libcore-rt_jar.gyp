@@ -24,7 +24,7 @@
 
   'targets': [
     {
-      'target_name': 'libcore-rt_jar<(any_variant)',
+      'target_name': 'libcore-rt_jar',
       'type': 'none',
 
       'variables': {

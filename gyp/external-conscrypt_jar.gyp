@@ -24,7 +24,7 @@
 
   'targets': [
     {
-      'target_name': 'external-conscrypt_jar<(any_variant)',
+      'target_name': 'external-conscrypt_jar',
       'type': 'none',
 
       'dependencies': [

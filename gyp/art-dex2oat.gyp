@@ -20,7 +20,7 @@
 
   'targets': [
     {
-      'target_name': 'art-dex2oat<(host_variant)',
+      'target_name': 'art-dex2oat',
       'product_name': 'dex2oat',
       'type': 'executable',
 

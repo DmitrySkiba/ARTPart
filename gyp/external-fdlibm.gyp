@@ -30,7 +30,7 @@
 
   'targets':[
     {
-      'target_name': 'external-fdlibm<(any_variant)',
+      'target_name': 'external-fdlibm',
       'product_name': 'fdlibm',
       'type': 'static_library',
 

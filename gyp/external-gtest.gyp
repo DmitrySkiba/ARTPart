@@ -23,7 +23,7 @@
 
   'targets': [
     {
-      'target_name': 'external-gtest-include<(any_variant)',
+      'target_name': 'external-gtest-include',
       'type': 'none',
 
       'direct_dependent_settings': {
@@ -36,16 +36,16 @@
       },
     },
     {
-      'target_name': 'external-gtest<(any_variant)',
+      'target_name': 'external-gtest',
       'product_name': 'gtest',
       'type': 'static_library',
 
       'dependencies': [
-        'external-gtest-include<(any_variant)',
+        'external-gtest-include',
       ],
 
       'export_dependent_settings': [
-        'external-gtest-include<(any_variant)',
+        'external-gtest-include',
       ],
 
       'include_dirs': [

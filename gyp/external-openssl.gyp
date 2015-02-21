@@ -34,7 +34,7 @@
 
   'targets': [
     {
-      'target_name': 'external-openssl<(any_variant)',
+      'target_name': 'external-openssl',
       'type': 'none',
 
       'direct_dependent_settings': {

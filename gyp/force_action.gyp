@@ -19,7 +19,7 @@
 
   'targets': [
     {
-      'target_name': 'force_action<(any_variant)',
+      'target_name': 'force_action',
       'type': 'none',
 
       'actions': [

@@ -23,7 +23,7 @@
 
   'targets': [
     {
-      'target_name': 'libnativehelper<(any_variant)',
+      'target_name': 'libnativehelper',
       'type': 'static_library',
 
       'dependencies': [

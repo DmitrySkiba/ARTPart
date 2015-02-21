@@ -24,7 +24,7 @@
 
   'targets': [
     {
-      'target_name': 'system-libutils<(any_variant)',
+      'target_name': 'system-libutils',
       'product_name': 'libutils',
       'type': 'static_library',
 

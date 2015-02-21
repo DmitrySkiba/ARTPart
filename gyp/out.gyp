@@ -19,7 +19,7 @@
 
   'targets': [
     {
-      'target_name': 'out<(any_variant)',
+      'target_name': 'out',
       'type': 'none',
 
       'dependencies': [

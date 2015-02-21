@@ -24,7 +24,7 @@
 
   'targets': [
     {
-      'target_name': 'system-libcutils<(any_variant)',
+      'target_name': 'system-libcutils',
       'product_name': 'libcutils',
       'type': 'static_library',
 

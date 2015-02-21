@@ -22,7 +22,7 @@
     [ 'using_gradle == 1', {
       'targets': [
         {
-          'target_name': 'boot_oat<(any_variant)',
+          'target_name': 'boot_oat',
           'type': 'none',
 
           'dependencies': [
@@ -54,7 +54,7 @@
     }, {
       'targets': [
         {
-          'target_name': 'boot_jars<(any_variant)',
+          'target_name': 'boot_jars',
           'type': 'none',
 
           'variables': {
@@ -68,11 +68,11 @@
           'export_dependent_settings': [ '<@(jar_dependencies)' ],
         },
         {
-          'target_name': 'boot_oat<(any_variant)',
+          'target_name': 'boot_oat',
           'type': 'none',
 
           'dependencies': [
-            'boot_jars<(any_variant)',
+            'boot_jars',
             '<!(<(dependency) art-dex2oat)',
           ],
 

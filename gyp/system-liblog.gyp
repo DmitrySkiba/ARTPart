@@ -24,7 +24,7 @@
 
   'targets': [
     {
-      'target_name': 'system-liblog<(any_variant)',
+      'target_name': 'system-liblog',
       'product_name': 'liblog',
       'type': 'static_library',
 

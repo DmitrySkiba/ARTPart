@@ -23,7 +23,7 @@
 
   'targets': [
     {
-      'target_name': 'linuxemu<(any_variant)',
+      'target_name': 'linuxemu',
       'type': 'static_library',
 
       'direct_dependent_settings': {
