@@ -105,6 +105,11 @@
         '<(local_root)/jni/quick/x86/calling_convention_x86.cc',
         '<(local_root)/utils/x86/assembler_x86.cc',
         '<(local_root)/utils/x86/managed_register_x86.cc',
+
+        # ART_USE_X86_64_INSTRUCTION_SET
+        '<(local_root)/jni/quick/x86_64/calling_convention_x86_64.cc',
+        '<(local_root)/utils/x86_64/assembler_x86_64.cc',
+        '<(local_root)/utils/x86_64/managed_register_x86_64.cc',
       ],
     },
   ],

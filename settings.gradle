@@ -29,7 +29,6 @@ ext {
 
     platformRoot = new File(rootPath, 'platform')
     gradleRoot = new File(rootPath, 'gradle')
-    outRoot = new File(rootPath, "out/host")
 
     relativize = { File path, File other ->
         return Paths.get(path.toURI()).relativize(Paths.get(other.toURI())).toFile()

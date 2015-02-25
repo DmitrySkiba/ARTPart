@@ -24,7 +24,7 @@
 
     'jar_path': '<(build_root)/app.jar',
     'dex_path': '<(build_root)/app-dex.jar',
-    'oat_path': '<(build_root)/x86/app-dex.odex', # TODO use script to add 'x86'
+    'oat_path': '<(build_root)/<(instruction_set)/app-dex.odex',
   },
 
   'targets': [
@@ -84,7 +84,7 @@
             '--boot-image=<(boot_art_path)',
             '--dex-file=<(dex_path)',
             '--oat-file=<(oat_path)',
-            '--instruction-set=x86',
+            '--instruction-set=<(instruction_set)',
             '--host',
           ],
         },

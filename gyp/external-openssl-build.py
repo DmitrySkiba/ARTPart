@@ -62,6 +62,8 @@ def main(arguments):
   elif sdk.startswith('macosx') or sdk.startswith('iphonesimulator'):
     if arch == 'i386':
       openssl_target = 'darwin-i386-cc'
+    elif arch == 'x86_64':
+      openssl_target = 'darwin64-x86_64-cc'
 
   if not openssl_target:
     sys.exit('Failed to determine OpenSSL target.')

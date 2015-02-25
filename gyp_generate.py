@@ -63,6 +63,7 @@ def main(arguments):
   parser.add_option('--update', action = 'store_true')
   parser.add_option('--android-sdk-root')
   parser.add_option('--no-gradle', dest = 'using_gradle', default = True, action = 'store_false')
+  parser.add_option('--x86_64', dest = 'x86_build', default = True, action = 'store_false')
 
   options, _ = parser.parse_args(arguments)
 
@@ -94,7 +95,12 @@ def main(arguments):
   main_gyp_file = 'out'
 
   sdk = 'macosx10.9'
-  arch = 'i386'
+  if options.x86_build:
+    arch = 'i386'
+    instruction_set = 'x86'
+  else:
+    arch = 'x86_64'
+    instruction_set = 'x86_64'
 
   build_utils.make_directory(out_root)
 
@@ -105,6 +111,7 @@ def main(arguments):
     '-f', generator,
     '-D', 'root_path=' + root_path,
     '-D', 'using_gradle=' + str(int(options.using_gradle)),
+    '-D', 'instruction_set=' + instruction_set,
   ]
 
   for key, value in environ.iteritems():

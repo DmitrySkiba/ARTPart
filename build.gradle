@@ -31,8 +31,6 @@ buildscript {
 apply from: 'settings.gradle'
 
 ext {
-    architecture = 'x86'
-
     outRoot = new File(rootPath, "out")
     buildRoot = new File(outRoot, 'build/gradle')
 
@@ -44,20 +42,26 @@ ext {
     androidFrameworkPath = new File(androidRootPath, 'framework')
     androidDataPath = new File(androidFSRoot, 'data')
 
-    bootArtFile = new File(androidDataPath, "dalvik-cache/$architecture/boot.art")
-    bootOatFile = new File(androidDataPath, "dalvik-cache/$architecture/boot.oat")
-    dex2oatFile = new File(binRoot, 'dex2oat')
-
-    jarjarToolPath = new File(platformRoot, 'prebuilts/misc/common/jarjar/jarjar-1.4.jar')
-
-    bootOatBase = "0x60000000"
-
     // Import build environment variables
     def buildEnvironPath = new File(outRoot, 'build_environ.json')
     if (!buildEnvironPath.exists()) {
         throw new GradleException("Please run gyp_generate.py to generate $buildEnvironPath")
     }
     new JsonSlurper().parse(buildEnvironPath).each { key, value -> set(key, value) }
+
+    if (BUILD_ARCH == 'i386') {
+        instruction_set = 'x86'
+    } else if (BUILD_ARCH == 'x86_64') {
+        instruction_set = 'x86_64'
+    }
+
+    bootArtFile = new File(androidDataPath, "dalvik-cache/$instruction_set/boot.art")
+    bootOatFile = new File(androidDataPath, "dalvik-cache/$instruction_set/boot.oat")
+    dex2oatFile = new File(binRoot, 'dex2oat')
+
+    jarjarToolPath = new File(platformRoot, 'prebuilts/misc/common/jarjar/jarjar-1.4.jar')
+
+    bootOatBase = "0x60000000"
 }
 
 // Utilities
@@ -127,6 +131,7 @@ task bootOat {
                 args "--dex-file=${relativize(androidFSRoot, dexedJar)}"
             }
             args "--base=$bootOatBase"
+            args "--instruction-set=$instruction_set"
             args "--image-classes=$platformRoot/frameworks/base/preloaded-classes"
             args "--image=${relativize(androidFSRoot, bootArtFile)}"
             args "--oat-file=${relativize(androidFSRoot, bootOatFile)}"

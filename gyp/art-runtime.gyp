@@ -251,17 +251,36 @@
         # ART_USE_DLMALLOC_ALLOCATOR
         #'<(local_root)/gc/allocator/dlmalloc.cc',
         #'<(local_root)/gc/space/dlmalloc_space.cc',
+      ],
 
-        # ART_USE_X86_INSTRUCTION_SET
-        '<(local_root)/arch/x86/context_x86.cc',
-        '<(local_root)/arch/x86/entrypoints_init_x86.cc',
-        '<(local_root)/arch/x86/fault_handler_x86.cc',
-        '<(local_root)/arch/x86/registers_x86.cc',
-        '<(local_root)/arch/x86/thread_x86.cc',
-        '<(local_root)/arch/x86/asm_support_x86.S',
-        '<(local_root)/arch/x86/jni_entrypoints_x86.S',
-        '<(local_root)/arch/x86/memcmp16_x86.S',
-        '<(local_root)/arch/x86/quick_entrypoints_x86.S',
+      'conditions': [
+        [ 'instruction_set == "x86"', {
+          'sources': [
+            '<(local_root)/arch/x86/context_x86.cc',
+            '<(local_root)/arch/x86/entrypoints_init_x86.cc',
+            '<(local_root)/arch/x86/fault_handler_x86.cc',
+            '<(local_root)/arch/x86/registers_x86.cc',
+            '<(local_root)/arch/x86/thread_x86.cc',
+            '<(local_root)/arch/x86/asm_support_x86.S',
+            '<(local_root)/arch/x86/jni_entrypoints_x86.S',
+            '<(local_root)/arch/x86/memcmp16_x86.S',
+            '<(local_root)/arch/x86/quick_entrypoints_x86.S',
+          ],
+        }],
+        [ 'instruction_set == "x86_64"', {
+          'sources': [
+            '<(local_root)/arch/x86_64/context_x86_64.cc',
+            '<(local_root)/arch/x86_64/entrypoints_init_x86_64.cc',
+            '<(local_root)/arch/x86_64/jni_entrypoints_x86_64.S',
+            '<(local_root)/arch/x86_64/memcmp16_x86_64.S',
+            '<(local_root)/arch/x86_64/portable_entrypoints_x86_64.S',
+            '<(local_root)/arch/x86_64/quick_entrypoints_x86_64.S',
+            '<(local_root)/arch/x86_64/thread_x86_64.cc',
+            '<(local_root)/monitor_pool.cc',
+            '<(local_root)/arch/x86/fault_handler_x86.cc',
+            '<(local_root)/arch/x86/registers_x86.cc',
+          ],
+        }],
       ],
     },
   ],
