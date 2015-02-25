@@ -52,7 +52,6 @@ def main(arguments):
 
   out_root = os.path.join(root_path, 'out')
   environ_file = os.path.join(out_root, 'build_environ.json')
-  boot_class_path = os.path.join(out_root, 'jars')
   product_root = os.path.join(out_root, 'product')
 
   temp_root = os.path.realpath(tempfile.mkdtemp())
@@ -62,7 +61,6 @@ def main(arguments):
     jar_file = os.path.join(temp_root, options.main_class_name + '.jar')
     compile_jar.main([
       '--sources', options.sources,
-      '--boot-class-paths', boot_class_path,
       '--jar-file', jar_file,
       '--intermediate-path', temp_root,
     ])
