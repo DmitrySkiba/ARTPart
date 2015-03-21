@@ -20,6 +20,7 @@ import shutil
 import optparse
 import subprocess
 import xml.etree.ElementTree as ET
+import json
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -54,6 +55,54 @@ def _generate_xcode_workspace(projects_path, workspace_path):
   if update_workspace:
     with open(workspace_file_path, 'w') as workspace_file:
       workspace_file.write(workspace_file_content)
+
+
+def _add_common_build_props(build_props):
+
+  build_props['platform_root'] = os.path.join(build_props['root_path'], 'platform')
+  build_props['gradle_root'] = os.path.join(build_props['root_path'], 'gradle')
+
+  # out/ paths
+  build_props['product_root'] = os.path.join(build_props['out_root'], 'product')
+  build_props['bin_root'] = build_props['product_root']
+  build_props['lib_root'] = os.path.join(build_props['out_root'], 'lib')
+  build_props['jars_root'] = os.path.join(build_props['out_root'], 'jars')
+  build_props['headers_root'] = os.path.join(build_props['out_root'], 'include')
+  build_props['build_root'] = os.path.join(build_props['out_root'], 'build')
+
+  build_props['dex2oat_path'] = os.path.join(build_props['bin_root'], 'dex2oat')
+
+  # android_fs/ paths
+  build_props['android_fs_root'] = os.path.join(build_props['product_root'], 'android_fs')
+  build_props['android_root_path'] = os.path.join(build_props['android_fs_root'], 'system')
+  build_props['android_framework_path'] = os.path.join(build_props['android_root_path'], 'framework')
+  build_props['android_data_path'] = os.path.join(build_props['android_fs_root'], 'data')
+
+  build_props['boot_art_path'] = os.path.join(build_props['android_data_path'], 'dalvik-cache',
+                                              build_props['instruction_set'], 'boot.art')
+  build_props['boot_oat_path'] = os.path.join(build_props['android_data_path'], 'dalvik-cache',
+                                              build_props['instruction_set'], 'boot.oat')
+
+  # constants
+  build_props['boot_oat_base'] = '0x60000000'
+
+  build_props['jarjar_tool'] = os.path.join(build_props['platform_root'],
+                                            'prebuilts/misc/common/jarjar/jarjar-1.4.jar')
+
+  return build_props
+
+
+def _write_build_props(build_props):
+  json_path = os.path.join(build_props['out_root'], 'build_props.json')
+  with open(json_path, 'w') as file:
+    json.dump(build_props, file, indent = True)
+
+  gypi = { 'variables': build_props }
+  gypi_path = os.path.join(build_props['out_root'], 'build_props.gypi')
+  with open(gypi_path, 'w') as file:
+    json.dump(gypi, file, indent = True)
+
+  return json_path
 
 
 def main(arguments):
@@ -104,18 +153,25 @@ def main(arguments):
 
   build_utils.make_directory(out_root)
 
+  build_props = {
+    'root_path': root_path,
+    'out_root': out_root,
+    'arch': arch,
+    'instruction_set': instruction_set,
+    'using_gradle': int(options.using_gradle),
+  }
+  _add_common_build_props(build_props)
+
   environ = build_environ.generate(sdk, arch, android_sdk_root, android_api)
   build_environ.dump(environ, os.path.join(out_root, 'build_environ.json'))
 
+  build_props.update(environ)
+
+  _write_build_props(build_props)
+
   gyp_arguments = [
     '-f', generator,
-    '-D', 'root_path=' + root_path,
-    '-D', 'using_gradle=' + str(int(options.using_gradle)),
-    '-D', 'instruction_set=' + instruction_set,
   ]
-
-  for key, value in environ.iteritems():
-    gyp_arguments += [ '-D', key + '=' + value ]
 
   if options.debug_gyp:
     gyp_arguments += [ '-d', 'all' ]

@@ -15,7 +15,6 @@
  */
 
 import org.apache.commons.io.FilenameUtils
-import groovy.json.JsonSlurper
 
 buildscript {
     repositories {
@@ -26,42 +25,29 @@ buildscript {
     }
 }
 
-// Settings
-
+// Load build_props.json
 apply from: 'settings.gradle'
 
 ext {
-    outRoot = new File(rootPath, "out")
-    buildRoot = new File(outRoot, 'build/gradle')
+    buildRoot = new File(buildProps.build_root, 'gradle')
 
-    productRoot = new File(outRoot, 'product')
-    binRoot = productRoot
-    androidFSRoot = new File(productRoot, 'android_fs')
+    platformRoot = new File(buildProps.platform_root)
+    gradleRoot = new File(buildProps.gradle_root)
+    outRoot = new File(buildProps.out_root)
+    productRoot = new File(buildProps.product_root)
 
-    androidRootPath = new File(androidFSRoot, 'system')
-    androidFrameworkPath = new File(androidRootPath, 'framework')
-    androidDataPath = new File(androidFSRoot, 'data')
+    androidFSRoot = new File(buildProps.android_fs_root)
+    androidRootPath = new File(buildProps.android_root_path)
+    androidFrameworkPath = new File(buildProps.android_framework_path)
+    androidDataPath = new File(buildProps.android_data_path)
 
-    // Import build environment variables
-    def buildEnvironPath = new File(outRoot, 'build_environ.json')
-    if (!buildEnvironPath.exists()) {
-        throw new GradleException("Please run gyp_generate.py to generate $buildEnvironPath")
-    }
-    new JsonSlurper().parse(buildEnvironPath).each { key, value -> set(key, value) }
+    bootArtFile = new File(buildProps.boot_art_path)
+    bootOatFile = new File(buildProps.boot_oat_path)
+    dex2oatFile = new File(buildProps.dex2oat_path)
+    jarjarToolPath = new File(buildProps.jarjar_tool)
 
-    if (BUILD_ARCH == 'i386') {
-        instruction_set = 'x86'
-    } else if (BUILD_ARCH == 'x86_64') {
-        instruction_set = 'x86_64'
-    }
-
-    bootArtFile = new File(androidDataPath, "dalvik-cache/$instruction_set/boot.art")
-    bootOatFile = new File(androidDataPath, "dalvik-cache/$instruction_set/boot.oat")
-    dex2oatFile = new File(binRoot, 'dex2oat')
-
-    jarjarToolPath = new File(platformRoot, 'prebuilts/misc/common/jarjar/jarjar-1.4.jar')
-
-    bootOatBase = "0x60000000"
+    instructionSet = buildProps.instruction_set
+    bootOatBase = buildProps.boot_oat_base
 }
 
 // Utilities
@@ -82,7 +68,7 @@ class Dex extends DefaultTask {
     @TaskAction
     def dex() {
         project.exec {
-            executable = project.BUILD_ANDROID_DX
+            executable = project.buildProps.BUILD_ANDROID_DX
 
             args '--dex'
             if (coreLibrary) {
@@ -131,7 +117,7 @@ task bootOat {
                 args "--dex-file=${relativize(androidFSRoot, dexedJar)}"
             }
             args "--base=$bootOatBase"
-            args "--instruction-set=$instruction_set"
+            args "--instruction-set=${instructionSet}"
             args "--image-classes=$platformRoot/frameworks/base/preloaded-classes"
             args "--image=${relativize(androidFSRoot, bootArtFile)}"
             args "--oat-file=${relativize(androidFSRoot, bootOatFile)}"

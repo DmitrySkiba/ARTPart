@@ -15,20 +15,20 @@
  */
 
 import java.nio.file.Paths
+import groovy.json.JsonSlurper
 
 def hasSettings = hasProperty('settings')
 def hasProject = hasProperty('project')
 assert hasSettings ^ hasProject
 
 ext {
-    // We need those variables in two places: build.gradle (and its subprojects)
-    // and settings.gradle. Instead of inventing third file and applying it, I
-    // came up with this hack which allows including settings.gradle directly.
+    // Common properties needed both here and in build.gradle
 
-    rootPath = hasSettings ? settingsDir : projectDir
-
-    platformRoot = new File(rootPath, 'platform')
-    gradleRoot = new File(rootPath, 'gradle')
+    def buildPropsFile = new File('out/build_props.json')
+    if (!buildPropsFile.exists()) {
+        throw new GradleException("Please run gyp_generate.py to generate $buildPropsFile")
+    }
+    buildProps = new JsonSlurper().parse(buildPropsFile)
 
     relativize = { File path, File other ->
         return Paths.get(path.toURI()).relativize(Paths.get(other.toURI())).toFile()
@@ -38,11 +38,11 @@ ext {
 if (hasSettings) {
     def includeSubproject = { String name, String platformSubpath ->
         def projectName = ":$name"
-        def buildFilePath = new File(gradleRoot, "${name}.gradle")
+        def buildFilePath = new File(buildProps.gradle_root, "${name}.gradle")
 
         include(projectName)
         def project = project(projectName)
-        project.projectDir = new File(platformRoot, platformSubpath)
+        project.projectDir = new File(buildProps.platform_root, platformSubpath)
 
         // Make sure 'project.buildFile' ends up being 'buildFilePath'
         project.buildFileName = relativize(project.projectDir, buildFilePath).path
