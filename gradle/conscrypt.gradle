@@ -31,7 +31,7 @@ sourceSets {
 }
 
 jar.finalizeIntermediate {
-    ant.java(jar: jarjarToolPath, fork: true) {
+    ant.java(jar: jarjarTool, fork: true) {
         arg(value: 'process')
         arg(value: file('jarjar-rules.txt'))
         arg(value: jar.intermediateArchivePath)

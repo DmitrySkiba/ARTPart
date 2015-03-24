@@ -28,8 +28,8 @@
       'type': 'none',
 
       'variables': {
-        'jar_path': '<!(<(jar_path_v) rt)',
-        'dex_path': '<!(<(dex_path_v) rt)',
+        'jar_file': '<!(<(jar_file_v) rt)',
+        'dex_file': '<!(<(dex_file_v) rt)',
 
         'compile_jar.source_paths': [
           '<(local_root)/luni/src/main/java',
@@ -43,10 +43,10 @@
           '<(local_root)/luni/src/main/resources',
         ],
         'compile_jar.boot_class_paths': [ ':' ],
-        'compile_jar.jar_file': '<(jar_path)',
+        'compile_jar.jar_file': '<(jar_file)',
 
-        'dex.jar_file': '<(jar_path)',
-        'dex.dex_file': '<(dex_path)',
+        'dex.jar_file': '<(jar_file)',
+        'dex.dex_file': '<(dex_file)',
         'dex.core_library': 1,
       },
       'includes': [ 'utils/compile_jar.gypi', 'utils/dex.gypi' ],

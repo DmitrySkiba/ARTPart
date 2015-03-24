@@ -22,9 +22,9 @@
     'local_root': '<(platform_root)/testapps/HelloWorld',
     'build_root': '<(intermediate_build_root)/HelloWorld',
 
-    'jar_path': '<(build_root)/app.jar',
-    'dex_path': '<(build_root)/app-dex.jar',
-    'oat_path': '<(build_root)/<(instruction_set)/app-dex.odex',
+    'jar_file': '<(build_root)/app.jar',
+    'dex_file': '<(build_root)/app-dex.jar',
+    'oat_file': '<(build_root)/<(instruction_set)/app-dex.odex',
   },
 
   'targets': [
@@ -40,10 +40,10 @@
         'compile_jar.source_paths': [
           '<(local_root)/HelloWorld.java',
         ],
-        'compile_jar.jar_file': '<(jar_path)',
+        'compile_jar.jar_file': '<(jar_file)',
 
-        'dex.jar_file': '<(jar_path)',
-        'dex.dex_file': '<(dex_path)',
+        'dex.jar_file': '<(jar_file)',
+        'dex.dex_file': '<(dex_file)',
       },
       'includes': [ 'utils/compile_jar.gypi', 'utils/dex.gypi' ],
     },
@@ -59,7 +59,7 @@
       ],
 
       'defines': [
-        'APP_OAT_PATH="<(oat_path)"',
+        'APP_OAT_PATH="<(oat_file)"',
       ],
 
       'sources': [
@@ -71,19 +71,19 @@
           'action_name': 'oat_file',
           'message': 'Building oat file...',
 
-          'inputs': [ '<(dex_path)' ],
-          'outputs': [ '<(oat_path)' ],
+          'inputs': [ '<(dex_file)' ],
+          'outputs': [ '<(oat_file)' ],
 
           'action': [
             'python', 'utils/cwd_launcher.py', '<(android_fs_root)',
-            '<(dex2oat_path)',
+            '<(dex2oat_file)',
             '--android-root=<!(<(relpath) <(android_fs_root) <(android_root_path))',
             '--runtime-arg', '-Xms64m',
             '--runtime-arg', '-Xmx64m',
             '--runtime-arg', '-Xnorelocate',
-            '--boot-image=<(boot_art_path)',
-            '--dex-file=<(dex_path)',
-            '--oat-file=<(oat_path)',
+            '--boot-image=<(boot_art_file)',
+            '--dex-file=<(dex_file)',
+            '--oat-file=<(oat_file)',
             '--instruction-set=<(instruction_set)',
             '--host',
           ],

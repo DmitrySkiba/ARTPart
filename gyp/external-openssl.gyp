@@ -29,7 +29,7 @@
     'built_headers': '<(build_out_root)/include/openssl',
 
     'headers_root': '<(intermediate_headers_root)',
-    'libopenssl_path': '<(lib_root)/libopenssl.a',
+    'libopenssl_file': '<(lib_root)/libopenssl.a',
   },
 
   'targets': [
@@ -40,7 +40,7 @@
       'direct_dependent_settings': {
         'include_dirs': [ '<(headers_root)' ],
         'link_settings': {
-          'libraries': [ '<(libopenssl_path)' ]
+          'libraries': [ '<(libopenssl_file)' ]
         },
       },
 
@@ -82,7 +82,7 @@
       'variables': {
         'ar.action_name': 'libopenssl',
         'ar.message': 'Archiving OpenSSL libraries...',
-        'ar.archive_path': '<(libopenssl_path)',
+        'ar.archive_file': '<(libopenssl_file)',
         'ar.input_files': [ '<@(built_libraries)' ],
       },
       'includes': [ 'utils/ar.gypi' ],

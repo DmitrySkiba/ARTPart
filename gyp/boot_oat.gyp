@@ -39,8 +39,8 @@
                 '<(force_action_input)',
               ],
               'outputs': [
-                '<(boot_art_path)',
-                '<(boot_oat_path)',
+                '<(boot_art_file)',
+                '<(boot_oat_file)',
               ],
 
               'action': [
@@ -91,14 +91,14 @@
                 '>@(dependencies.dex_files)',
               ],
               'outputs': [
-                '<(boot_art_path)',
-                '<(boot_oat_path)',
+                '<(boot_art_file)',
+                '<(boot_oat_file)',
               ],
 
               'action': [
                 #TODO introduce dex2oat.py wrapper with --dex-files option and use >@(dependencies.dex_files)
                 'python', 'utils/cwd_launcher.py', '<(android_fs_root)',
-                '<!(<(relpath) <(android_fs_root) <(dex2oat_path))',
+                '<!(<(relpath) <(android_fs_root) <(dex2oat_file))',
                 '--android-root=<!(<(relpath) <(android_fs_root) <(android_root_path))',
                 '--runtime-arg', '-Xms64m',
                 '--runtime-arg', '-Xmx64m',
@@ -106,8 +106,8 @@
                 '--dex-file=<!(<(relpath) <(android_fs_root) <!(<(dex_path_v) conscrypt))',
                 '--base=<(boot_oat_base)',
                 '--image-classes=<(platform_root)/frameworks/base/preloaded-classes',
-                '--image=<!(<(relpath) <(android_fs_root) <(boot_art_path))',
-                '--oat-file=<!(<(relpath) <(android_fs_root) <(boot_oat_path))',
+                '--image=<!(<(relpath) <(android_fs_root) <(boot_art_file))',
+                '--oat-file=<!(<(relpath) <(android_fs_root) <(boot_oat_file))',
               ],
             },
           ],

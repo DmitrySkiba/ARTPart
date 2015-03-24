@@ -70,7 +70,7 @@ def _add_common_build_props(build_props):
   build_props['headers_root'] = os.path.join(build_props['out_root'], 'include')
   build_props['build_root'] = os.path.join(build_props['out_root'], 'build')
 
-  build_props['dex2oat_path'] = os.path.join(build_props['bin_root'], 'dex2oat')
+  build_props['dex2oat_file'] = os.path.join(build_props['bin_root'], 'dex2oat')
 
   # android_fs/ paths
   build_props['android_fs_root'] = os.path.join(build_props['product_root'], 'android_fs')
@@ -78,9 +78,9 @@ def _add_common_build_props(build_props):
   build_props['android_framework_path'] = os.path.join(build_props['android_root_path'], 'framework')
   build_props['android_data_path'] = os.path.join(build_props['android_fs_root'], 'data')
 
-  build_props['boot_art_path'] = os.path.join(build_props['android_data_path'], 'dalvik-cache',
+  build_props['boot_art_file'] = os.path.join(build_props['android_data_path'], 'dalvik-cache',
                                               build_props['instruction_set'], 'boot.art')
-  build_props['boot_oat_path'] = os.path.join(build_props['android_data_path'], 'dalvik-cache',
+  build_props['boot_oat_file'] = os.path.join(build_props['android_data_path'], 'dalvik-cache',
                                               build_props['instruction_set'], 'boot.oat')
 
   # constants

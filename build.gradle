@@ -31,6 +31,7 @@ apply from: 'settings.gradle'
 ext {
     buildRoot = new File(buildProps.build_root, 'gradle')
 
+    // TODO: rename automatically
     platformRoot = new File(buildProps.platform_root)
     gradleRoot = new File(buildProps.gradle_root)
     outRoot = new File(buildProps.out_root)
@@ -41,10 +42,10 @@ ext {
     androidFrameworkPath = new File(buildProps.android_framework_path)
     androidDataPath = new File(buildProps.android_data_path)
 
-    bootArtFile = new File(buildProps.boot_art_path)
-    bootOatFile = new File(buildProps.boot_oat_path)
-    dex2oatFile = new File(buildProps.dex2oat_path)
-    jarjarToolPath = new File(buildProps.jarjar_tool)
+    bootArtFile = new File(buildProps.boot_art_file)
+    bootOatFile = new File(buildProps.boot_oat_file)
+    dex2oatFile = new File(buildProps.dex2oat_file)
+    jarjarTool = new File(buildProps.jarjar_tool)
 
     instructionSet = buildProps.instruction_set
     bootOatBase = buildProps.boot_oat_base

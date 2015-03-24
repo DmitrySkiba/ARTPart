@@ -32,20 +32,20 @@
       ],
 
       'variables': {
-        'jar_path': '<!(<(jar_path_v) conscrypt)',
-        'dex_path': '<!(<(dex_path_v) conscrypt)',
+        'jar_file': '<!(<(jar_file_v) conscrypt)',
+        'dex_file': '<!(<(dex_file_v) conscrypt)',
 
         'compile_jar.source_paths': [
           '<(local_root)/src/main/java',
           '<(local_root)/src/platform/java',
         ],
         'compile_jar.boot_class_paths': '>(dependencies.jar_files)',
-        'compile_jar.jar_file': '<(jar_path)',
+        'compile_jar.jar_file': '<(jar_file)',
         'compile_jar.jarjar_tool': '<(jarjar_tool)',
         'compile_jar.jarjar_rules_file': '<(local_root)/jarjar-rules.txt',
 
-        'dex.jar_file': '<(jar_path)',
-        'dex.dex_file': '<(dex_path)',
+        'dex.jar_file': '<(jar_file)',
+        'dex.dex_file': '<(dex_file)',
       },
       'includes': [ 'utils/compile_jar.gypi', 'utils/dex.gypi' ],
     }

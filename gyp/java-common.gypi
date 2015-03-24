@@ -16,8 +16,8 @@
   'variables': {
 
     # scripts
-    'jar_path_v': '<(format) <(jars_root)/{}.jar',
-    'dex_path_v': '<(format) <(android_framework_path)/{}.jar',
+    'jar_file_v': '<(format) <(jars_root)/{}.jar',
+    'dex_file_v': '<(format) <(android_framework_path)/{}.jar',
 
     'compile_jar.intermediate_path': '<(intermediate_build_root)/>(_target_name)/compile_jar',
     'compile_jar.stamp_file': '<(intermediate_build_root)/>(_target_name)/compile_jar.stamp',

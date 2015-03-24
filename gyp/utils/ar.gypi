@@ -15,7 +15,7 @@
 # Arguments:
 # ar.action_name    REQUIRED
 # ar.message
-# ar.archive_path   REQUIRED
+# ar.archive_file   REQUIRED
 # ar.input_files    REQUIRED
 {
   'variables': {
@@ -28,9 +28,9 @@
       'message': '<(ar.message)',
 
       'inputs': [ '<@(ar.input_files)' ],
-      'outputs': [ '<(ar.archive_path)' ],
+      'outputs': [ '<(ar.archive_file)' ],
 
-      'action': [ '<(BUILD_LIBTOOL)', '-static', '-o', '<(ar.archive_path)', '<@(ar.input_files)' ],
+      'action': [ '<(BUILD_LIBTOOL)', '-static', '-o', '<(ar.archive_file)', '<@(ar.input_files)' ],
     },
   ],
 }
