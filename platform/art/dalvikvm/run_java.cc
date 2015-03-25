@@ -171,9 +171,10 @@ extern "C" bool RunJava(const char* oat_location, const char* class_name, const 
   optionString += "-Ximage:";
   optionString += android_data.appendPathCopy("dalvik-cache/boot.art");
 
-  JavaVMOption options[2];
+  JavaVMOption options[3];
   options[0].optionString = optionString;
   options[1].optionString = "-Xnorelocate";
+  options[2].optionString = "-XX:DisableHSpaceCompactForOOM";
 
   JavaVMInitArgs init_args;
   init_args.version = JNI_VERSION_1_6;
