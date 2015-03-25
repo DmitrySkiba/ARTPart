@@ -231,7 +231,7 @@
         '<(local_root)/signal_catcher.cc',
         '<(local_root)/stack.cc',
         '<(local_root)/thread.cc',
-        '<(local_root)/thread_android.cc',
+        '<(local_root)/thread_linux.cc',
         '<(local_root)/thread_list.cc',
         '<(local_root)/thread_pool.cc',
         '<(local_root)/throw_location.cc',
