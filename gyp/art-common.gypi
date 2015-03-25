@@ -20,6 +20,7 @@
   'target_defaults': {
 
     'defines': [
+      'IMT_SIZE=64',
       #'ART_USE_PORTABLE_COMPILER',
       #'ART_USE_OPTIMIZING_COMPILER',
       #'ART_USE_ARM_INSTRUCTION_SET',

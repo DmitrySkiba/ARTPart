@@ -102,6 +102,7 @@
                 '--android-root=<!(<(relpath) <(android_fs_root) <(android_root_path))',
                 '--runtime-arg', '-Xms64m',
                 '--runtime-arg', '-Xmx64m',
+                '--runtime-arg', '-XX:DisableHSpaceCompactForOOM',
                 '--dex-file=<!(<(relpath) <(android_fs_root) <!(<(dex_path_v) rt))',
                 '--dex-file=<!(<(relpath) <(android_fs_root) <!(<(dex_path_v) conscrypt))',
                 '--base=<(boot_oat_base)',

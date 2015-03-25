@@ -92,6 +92,7 @@ def main(arguments):
       '--instruction-set=x86',
       '--host',
       '--runtime-arg', '-Xnorelocate',
+      '--runtime-arg', '-XX:DisableHSpaceCompactForOOM',
     ])
 
     os.environ['ANDROID_ROOT'] = os.path.relpath(android_root, android_fs_root)
@@ -107,6 +108,7 @@ def main(arguments):
       '-classpath', dex_file,
       '--runtime-arg', '-Xbootclasspath:' + bootclasspath,
       '--runtime-arg', '-Xnorelocate',
+      '--runtime-arg', '-XX:DisableHSpaceCompactForOOM',
       options.main_class_name,
     ]
     build_utils.check_call_die(dalvikvm_cmd)

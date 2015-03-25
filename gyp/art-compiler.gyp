@@ -94,6 +94,7 @@
         '<(local_root)/utils/assembler.cc',
         '<(local_root)/utils/scoped_arena_allocator.cc',
         '<(local_root)/vector_output_stream.cc',
+        '<(local_root)/utils/swap_space.cc',
 
         # ART_USE_X86_INSTRUCTION_SET
         '<(local_root)/dex/quick/x86/assemble_x86.cc',

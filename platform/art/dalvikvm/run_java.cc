@@ -100,7 +100,7 @@ extern "C" bool LoadApp(JNIEnv* env, const char* oat_location) {
     Runtime::Current()->GetSystemClassLoader())));
 
   std::string error_msg;
-  OatFile* oat_file = OatFile::Open(oat_location, oat_location, nullptr, false, &error_msg); //OatFile::OpenLinked("app");
+  OatFile* oat_file = OatFile::Open(oat_location, oat_location, nullptr, nullptr, false, &error_msg); //OatFile::OpenLinked("app");
   if (!oat_file) {
     fprintf(stderr, "Failed to open app oat file: %s\n", error_msg.c_str());
     return false;
@@ -119,7 +119,14 @@ extern "C" bool LoadApp(JNIEnv* env, const char* oat_location) {
 
     for (size_t i = 0, e = dex_file->NumClassDefs(); i != e; ++i) {
       const DexFile::ClassDef& descriptor = dex_file->GetClassDef(i);
-      linker->DefineClass(dex_file->GetClassDescriptor(descriptor), class_loader, *dex_file, descriptor);
+      std::string descriptor_string = dex_file->GetClassDescriptor(descriptor);
+      const size_t hash(ComputeModifiedUtf8Hash(descriptor_string.c_str()));
+      linker->DefineClass(soa.Self(),
+                          descriptor_string.c_str(),
+                          ComputeModifiedUtf8Hash(descriptor_string.c_str()),
+                          class_loader,
+                          *dex_file,
+                          descriptor);
     }
   }
 

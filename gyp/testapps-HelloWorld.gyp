@@ -81,6 +81,7 @@
             '--runtime-arg', '-Xms64m',
             '--runtime-arg', '-Xmx64m',
             '--runtime-arg', '-Xnorelocate',
+            '--runtime-arg', '-XX:DisableHSpaceCompactForOOM',
             '--boot-image=<(boot_art_file)',
             '--dex-file=<(dex_file)',
             '--oat-file=<(oat_file)',

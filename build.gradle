@@ -114,6 +114,7 @@ task bootOat {
             args "--android-root=${relativize(androidFSRoot, androidRootPath)}"
             args '--runtime-arg', '-Xms64m'
             args '--runtime-arg', '-Xmx64m'
+            args '--runtime-arg', '-XX:DisableHSpaceCompactForOOM'
             configurations.allDexedJars.files.each { dexedJar ->
                 args "--dex-file=${relativize(androidFSRoot, dexedJar)}"
             }

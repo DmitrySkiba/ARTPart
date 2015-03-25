@@ -63,9 +63,7 @@ ArtMethod* ArtMethod::FromReflectedMethod(const ScopedObjectAccessAlreadyRunnabl
 
 
 void ArtMethod::VisitRoots(RootCallback* callback, void* arg) {
-  if (!java_lang_reflect_ArtMethod_.IsNull()) {
-    java_lang_reflect_ArtMethod_.VisitRoot(callback, arg, 0, kRootStickyClass);
-  }
+  java_lang_reflect_ArtMethod_.VisitRootIfNonNull(callback, arg, RootInfo(kRootStickyClass));
 }
 
 InvokeType ArtMethod::GetInvokeType() {
@@ -92,21 +90,6 @@ void ArtMethod::ResetClass() {
   java_lang_reflect_ArtMethod_ = GcRoot<Class>(nullptr);
 }
 
-void ArtMethod::SetDexCacheStrings(ObjectArray<String>* new_dex_cache_strings) {
-  SetFieldObject<false>(OFFSET_OF_OBJECT_MEMBER(ArtMethod, dex_cache_strings_),
-                        new_dex_cache_strings);
-}
-
-void ArtMethod::SetDexCacheResolvedMethods(ObjectArray<ArtMethod>* new_dex_cache_methods) {
-  SetFieldObject<false>(OFFSET_OF_OBJECT_MEMBER(ArtMethod, dex_cache_resolved_methods_),
-                        new_dex_cache_methods);
-}
-
-void ArtMethod::SetDexCacheResolvedTypes(ObjectArray<Class>* new_dex_cache_classes) {
-  SetFieldObject<false>(OFFSET_OF_OBJECT_MEMBER(ArtMethod, dex_cache_resolved_types_),
-                        new_dex_cache_classes);
-}
-
 size_t ArtMethod::NumArgRegisters(const StringPiece& shorty) {
   CHECK_LE(1, shorty.length());
   uint32_t num_registers = 0;
@@ -119,10 +102,6 @@ size_t ArtMethod::NumArgRegisters(const StringPiece& shorty) {
     }
   }
   return num_registers;
-}
-
-bool ArtMethod::IsProxyMethod() {
-  return GetDeclaringClass()->IsProxyClass();
 }
 
 ArtMethod* ArtMethod::FindOverriddenMethod() {
@@ -174,9 +153,9 @@ uint32_t ArtMethod::ToDexPc(const uintptr_t pc, bool abort_on_failure) {
     // Portable doesn't use the machine pc, we just use dex pc instead.
     return static_cast<uint32_t>(pc);
   }
-  const void* entry_point = GetQuickOatEntryPoint();
-  MappingTable table(
-      entry_point != nullptr ? GetMappingTable(EntryPointToCodePointer(entry_point)) : nullptr);
+  const void* entry_point = GetQuickOatEntryPoint(sizeof(void*));
+  MappingTable table(entry_point != nullptr ?
+      GetMappingTable(EntryPointToCodePointer(entry_point), sizeof(void*)) : nullptr);
   if (table.TotalSize() == 0) {
     // NOTE: Special methods (see Mir2Lir::GenSpecialCase()) have an empty mapping
     // but they have no suspend checks and, consequently, we never call ToDexPc() for them.
@@ -207,9 +186,9 @@ uint32_t ArtMethod::ToDexPc(const uintptr_t pc, bool abort_on_failure) {
 }
 
 uintptr_t ArtMethod::ToNativePc(const uint32_t dex_pc) {
-  const void* entry_point = GetQuickOatEntryPoint();
-  MappingTable table(
-      entry_point != nullptr ? GetMappingTable(EntryPointToCodePointer(entry_point)) : nullptr);
+  const void* entry_point = GetQuickOatEntryPoint(sizeof(void*));
+  MappingTable table(entry_point != nullptr ?
+      GetMappingTable(EntryPointToCodePointer(entry_point), sizeof(void*)) : nullptr);
   if (table.TotalSize() == 0) {
     DCHECK_EQ(dex_pc, 0U);
     return 0;   // Special no mapping/pc == 0 case
@@ -385,7 +364,7 @@ void ArtMethod::RegisterNative(Thread* self, const void* native_method, bool is_
   if (is_fast) {
     SetAccessFlags(GetAccessFlags() | kAccFastNative);
   }
-  SetNativeMethod(native_method);
+  SetEntryPointFromJni(native_method);
 }
 
 void ArtMethod::UnregisterNative(Thread* self) {
