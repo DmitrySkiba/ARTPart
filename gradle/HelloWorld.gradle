@@ -1,0 +1,66 @@
+/*
+ * Copyright (C) 2015 Dmitry Skiba
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply from: file("$gradleRoot/java.gradle")
+
+dependencies {
+    compile project(':rt')
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir '.'
+        }
+    }
+}
+
+if (hasProperty('outputDexFile') && hasProperty('outputOatFile')) {
+
+    task dex(type: Dex, dependsOn: jar) {
+        jarFile = jar.archivePath
+        dexFile = rootProject.file outputDexFile
+    }
+
+    // TODO: extract part common with bootOat into a class
+    task oat(dependsOn: dex) {
+        def oatFile = rootProject.file outputOatFile
+
+        inputs.file dex2oatFile
+        inputs.file dex.dexFile
+        outputs.file oatFile
+
+        doLast {
+            project.exec {
+                // Common with bootOat
+                workingDir = androidFSRoot
+                executable = relativize(androidFSRoot, dex2oatFile)
+                args "--android-root=${relativize(androidFSRoot, androidRootPath)}"
+                args '--runtime-arg', '-Xms64m'
+                args '--runtime-arg', '-Xmx64m'
+                args '--runtime-arg', '-XX:DisableHSpaceCompactForOOM'
+                args "--instruction-set=${instructionSet}"
+                args '--runtime-arg', '-Xnorelocate' // TODO: can be used in bootOat?
+
+                // Specific
+                args "--boot-image=$bootArtFile"
+                args "--dex-file=${dex.dexFile}"
+                args "--oat-file=$oatFile"
+                args '--host'
+            }
+        }
+    }
+}

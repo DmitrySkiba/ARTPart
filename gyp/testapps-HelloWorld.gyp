@@ -53,7 +53,6 @@
       'type': 'executable',
 
       'dependencies': [
-        'testapps-HelloWorld-jar',
         '<!(<(dependency) art-run_java)',
         '<!(<(dependency) art-dex2oat)',
       ],
@@ -66,29 +65,59 @@
         '<(local_root)/hello_world.cc'
       ],
 
-      'actions': [
-        {
-          'action_name': 'oat_file',
-          'message': 'Building oat file...',
-
-          'inputs': [ '<(dex_file)' ],
-          'outputs': [ '<(oat_file)' ],
-
-          'action': [
-            'python', 'utils/cwd_launcher.py', '<(android_fs_root)',
-            '<(dex2oat_file)',
-            '--android-root=<!(<(relpath) <(android_fs_root) <(android_root_path))',
-            '--runtime-arg', '-Xms64m',
-            '--runtime-arg', '-Xmx64m',
-            '--runtime-arg', '-Xnorelocate',
-            '--runtime-arg', '-XX:DisableHSpaceCompactForOOM',
-            '--boot-image=<(boot_art_file)',
-            '--dex-file=<(dex_file)',
-            '--oat-file=<(oat_file)',
-            '--instruction-set=<(instruction_set)',
-            '--host',
+      'conditions': [
+        [ 'using_gradle == 1', {
+          'dependencies': [
+            '<!(<(dependency) boot_oat)',
           ],
-        },
+
+          'actions': [
+            {
+              'action_name': 'oat_file',
+              'message': 'Building oat file...',
+
+              'inputs': [ '<(dex_file)' ],
+              'outputs': [ '<(oat_file)' ],
+
+              'action': [
+                'python', 'utils/cwd_launcher.py', '<(root_path)',
+                'gradlew',
+                '-PoutputDexFile=<(dex_file)',
+                '-PoutputOatFile=<(oat_file)',
+                'HelloWorld:oat'
+              ],
+            },
+          ],
+        }, { # else
+          'dependencies': [
+            'testapps-HelloWorld-jar',
+          ],
+
+          'actions': [
+            {
+              'action_name': 'oat_file',
+              'message': 'Building oat file...',
+
+              'inputs': [ '<(dex_file)' ],
+              'outputs': [ '<(oat_file)' ],
+
+              'action': [
+                'python', 'utils/cwd_launcher.py', '<(android_fs_root)',
+                '<(dex2oat_file)',
+                '--android-root=<!(<(relpath) <(android_fs_root) <(android_root_path))',
+                '--runtime-arg', '-Xms64m',
+                '--runtime-arg', '-Xmx64m',
+                '--runtime-arg', '-Xnorelocate',
+                '--runtime-arg', '-XX:DisableHSpaceCompactForOOM',
+                '--boot-image=<(boot_art_file)',
+                '--dex-file=<(dex_file)',
+                '--oat-file=<(oat_file)',
+                '--instruction-set=<(instruction_set)',
+                '--host',
+              ],
+            },
+          ],
+        }],
       ],
     },
   ],

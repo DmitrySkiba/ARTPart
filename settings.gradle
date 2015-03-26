@@ -50,4 +50,5 @@ if (hasSettings) {
 
     includeSubproject 'rt', 'libcore'
     includeSubproject 'conscrypt', 'external/conscrypt'
+    includeSubproject 'HelloWorld', 'testapps/HelloWorld'
 }
