@@ -991,6 +991,13 @@ public final class System {
     /**
      * @hide internal use only
      */
+    public static void initStaticLibrary(String libName) {
+        Runtime.getRuntime().initStaticLibrary(libName, VMStack.getCallingClassLoader());
+    }
+
+    /**
+     * @hide internal use only
+     */
     public static void logE(String message) {
         log('E', message, null);
     }

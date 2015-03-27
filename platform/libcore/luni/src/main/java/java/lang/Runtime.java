@@ -432,6 +432,13 @@ public class Runtime {
     // TODO: should be synchronized, but dalvik doesn't support synchronized internal natives.
     private static native String nativeLoad(String filename, ClassLoader loader, String ldLibraryPath);
 
+    public void initStaticLibrary(String name, ClassLoader loader) {
+        String error = doLoad("static:" + name, loader);
+        if (error != null) {
+            throw new UnsatisfiedLinkError(error);
+        }
+    }
+
     /**
      * Provides a hint to the VM that it would be useful to attempt
      * to perform any outstanding object finalization.
