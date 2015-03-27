@@ -15,7 +15,17 @@
  */
 
 class HelloWorld {
+  static {
+    System.initStaticLibrary("HelloWorld");
+  }
+
   public static void main(String[] args) {
+    nativeMain(args);
+  }
+
+  private static void sayHello() {
     System.out.println("Hello world!");
   }
+
+  private static native void nativeMain(String[] args);
 }

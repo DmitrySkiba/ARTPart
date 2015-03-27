@@ -15,10 +15,20 @@
  */
 
 #include <stdlib.h>
+#include <jni.h>
 
 extern "C" bool RunJava(const char* oat_location, const char* class_name, const char* const* arguments);
 
 int main(int argc, const char* const* argv) {
   const char* arguments[] = {nullptr};
   return !RunJava(APP_OAT_PATH, "HelloWorld", arguments);
+}
+
+extern "C" JNIEXPORT jint HelloWorld_JNI_OnLoad(JavaVM* vm, void*) {
+  return JNI_VERSION_1_6;
+}
+
+extern "C" JNIEXPORT void JNICALL Java_HelloWorld_nativeMain(JNIEnv* env, jclass clazz, jarray args) {
+  jmethodID sayHello = env->GetStaticMethodID(clazz, "sayHello", "()V");
+  env->CallStaticVoidMethod(clazz, sayHello);
 }

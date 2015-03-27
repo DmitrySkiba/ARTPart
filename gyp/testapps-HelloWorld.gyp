@@ -55,6 +55,7 @@
       'dependencies': [
         '<!(<(dependency) art-run_java)',
         '<!(<(dependency) art-dex2oat)',
+        '<!(<(dependency) libnativehelper)',
       ],
 
       'defines': [
@@ -69,6 +70,7 @@
         [ 'using_gradle == 1', {
           'dependencies': [
             '<!(<(dependency) boot_oat)',
+            '<!(<(dependency) force_action)',
           ],
 
           'actions': [
@@ -76,8 +78,8 @@
               'action_name': 'oat_file',
               'message': 'Building oat file...',
 
-              'inputs': [ '<(dex_file)' ],
-              'outputs': [ '<(oat_file)' ],
+              'inputs': [ '<(force_action_input)' ],
+              'outputs': [ '<(dex_file)', '<(oat_file)' ],
 
               'action': [
                 'python', 'utils/cwd_launcher.py', '<(root_path)',
