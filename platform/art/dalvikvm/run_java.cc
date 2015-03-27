@@ -167,19 +167,29 @@ extern "C" bool RunJava(const char* oat_location, const char* class_name, const 
     android_data = getenv("ANDROID_DATA");
   }
 
-  android::String8 optionString;
-  optionString += "-Ximage:";
-  optionString += android_data.appendPathCopy("dalvik-cache/boot.art");
+  android::String8 imageOption;
+  imageOption += "-Ximage:";
+  imageOption += android_data.appendPathCopy("dalvik-cache/boot.art");
 
-  JavaVMOption options[3];
-  options[0].optionString = optionString;
-  options[1].optionString = "-Xnorelocate";
-  options[2].optionString = "-XX:DisableHSpaceCompactForOOM";
+  JavaVMOption options[4] = {0};
+  size_t optionCount = 0;
+  options[optionCount++].optionString = imageOption;
+  options[optionCount++].optionString = "-Xnorelocate";
+  options[optionCount++].optionString = "-XX:DisableHSpaceCompactForOOM";
+
+  android::String8 debugOption;
+  const char* jdwpPort = getenv("JDWP_PORT");
+  if (jdwpPort) {
+    debugOption = android::String8::format(
+      "-agentlib:jdwp=transport=dt_socket,address=%s,server=y,suspend=y",
+      jdwpPort);
+    options[optionCount++].optionString = debugOption;
+  }
 
   JavaVMInitArgs init_args;
   init_args.version = JNI_VERSION_1_6;
   init_args.options = options;
-  init_args.nOptions = arraysize(options);
+  init_args.nOptions = optionCount;
   init_args.ignoreUnrecognized = JNI_FALSE;
 
   // Start the runtime. The current thread becomes the main thread.
