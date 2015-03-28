@@ -48,6 +48,8 @@ if (hasSettings) {
         project.buildFileName = relativize(project.projectDir, buildFilePath).path
     }
 
+    includeSubproject 'gradleUtils', 'gradle'
+
     includeSubproject 'rt', 'libcore'
     includeSubproject 'conscrypt', 'external/conscrypt'
     includeSubproject 'HelloWorld', 'testapps/HelloWorld'

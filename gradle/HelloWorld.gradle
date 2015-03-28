@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-apply from: file("$gradleRoot/java.gradle")
+apply from: file("$gradleHelpersRoot/java.gradle")
 
 dependencies {
     compile project(':rt')

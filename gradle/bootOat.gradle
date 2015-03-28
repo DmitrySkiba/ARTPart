@@ -1,0 +1,46 @@
+configurations {
+    allDexedJars
+}
+
+subprojects { subproject ->
+    plugins.withType(JavaPlugin) {
+        // TODO: find a way to check if a subproject has 'dexedJar' configuration
+        //       instead of creating it for all subprojects
+        subproject.configurations.create('dexedJar')
+        rootProject.dependencies {
+            allDexedJars project(path: subproject.path, configuration: 'dexedJar')
+        }
+    }
+}
+
+// TODO: extract part common with HelloWorld:oat into a class
+task bootOat {
+    inputs.file dex2oatFile
+    inputs.file configurations.allDexedJars
+    outputs.file bootArtFile
+    outputs.file bootOatFile
+
+    doLast {
+        project.exec {
+            workingDir = androidFSRoot
+            executable = relativize(androidFSRoot, dex2oatFile)
+            args "--android-root=${relativize(androidFSRoot, androidRootPath)}"
+            args '--runtime-arg', '-Xms64m'
+            args '--runtime-arg', '-Xmx64m'
+            args '--runtime-arg', '-XX:DisableHSpaceCompactForOOM'
+            args "--instruction-set=${instructionSet}"
+
+            configurations.allDexedJars.files.each { dexedJar ->
+                args "--dex-file=${relativize(androidFSRoot, dexedJar)}"
+            }
+            args "--base=$bootOatBase"
+            args "--image-classes=$platformRoot/frameworks/base/preloaded-classes"
+            args "--image=${relativize(androidFSRoot, bootArtFile)}"
+            args "--oat-file=${relativize(androidFSRoot, bootOatFile)}"
+        }
+    }
+}
+
+clean {
+    delete bootOat.outputs
+}

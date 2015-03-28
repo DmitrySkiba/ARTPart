@@ -1,0 +1,33 @@
+import org.apache.commons.io.FilenameUtils
+
+def dexPathFromJar(File jarFile) {
+    return new File(androidFrameworkPath, jarFile.getName())
+}
+
+class Dex extends DefaultTask {
+    Boolean coreLibrary = false
+
+    @InputFile
+    File jarFile
+
+    @OutputFile
+    File dexFile
+
+    @TaskAction
+    def dex() {
+        project.exec {
+            executable = project.buildProps.BUILD_ANDROID_DX
+
+            args '--dex'
+            if (coreLibrary) {
+                args '--core-library'
+            }
+            args "--output=$dexFile", jarFile
+        }
+    }
+}
+ext.Dex = Dex
+
+// Export to the root project
+rootProject.ext.dexPathFromJar = this.&dexPathFromJar
+rootProject.ext.Dex = Dex

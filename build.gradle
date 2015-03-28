@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.apache.commons.io.FilenameUtils
-
 buildscript {
     repositories {
         mavenCentral()
@@ -29,109 +27,38 @@ buildscript {
 apply from: 'settings.gradle'
 
 ext {
-    buildRoot = new File(buildProps.build_root, 'gradle')
-
     // TODO: rename automatically
     platformRoot = new File(buildProps.platform_root)
     gradleRoot = new File(buildProps.gradle_root)
     outRoot = new File(buildProps.out_root)
     productRoot = new File(buildProps.product_root)
-
     androidFSRoot = new File(buildProps.android_fs_root)
     androidRootPath = new File(buildProps.android_root_path)
     androidFrameworkPath = new File(buildProps.android_framework_path)
     androidDataPath = new File(buildProps.android_data_path)
-
     bootArtFile = new File(buildProps.boot_art_file)
     bootOatFile = new File(buildProps.boot_oat_file)
     dex2oatFile = new File(buildProps.dex2oat_file)
     jarjarTool = new File(buildProps.jarjar_tool)
-
     instructionSet = buildProps.instruction_set
     bootOatBase = buildProps.boot_oat_base
+
+    buildRoot = new File(buildProps.build_root, 'gradle')
+    gradleHelpersRoot = new File(gradleRoot, 'helpers')
 }
 
-// Utilities
-
-def dexPathFromJar(File jarFile) {
-    return new File(androidFrameworkPath, jarFile.getName())
+subprojects {
+    buildDir = new File(buildRoot, name)
 }
 
-class Dex extends DefaultTask {
-    Boolean coreLibrary = false
-
-    @InputFile
-    File jarFile
-
-    @OutputFile
-    File dexFile
-
-    @TaskAction
-    def dex() {
-        project.exec {
-            executable = project.buildProps.BUILD_ANDROID_DX
-
-            args '--dex'
-            if (coreLibrary) {
-                args '--core-library'
-            }
-            args "--output=$dexFile", jarFile
-        }
-    }
-}
-ext.Dex = Dex
+evaluationDependsOn ':gradleUtils'
 
 // Tasks
-
-configurations {
-    allDexedJars
-}
-
-project.subprojects { subproject ->
-    buildDir = new File(buildRoot, name)
-
-    plugins.withType(JavaPlugin) {
-        // TODO: find a way to check if a subproject has 'dexedJar' configuration
-        //       instead of creating it for all subprojects
-        subproject.configurations.create('dexedJar')
-        rootProject.dependencies {
-            allDexedJars project(path: subproject.path, configuration: 'dexedJar')
-        }
-    }
-}
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.2.1'
 }
 
-// TODO: extract part common with HelloWorld:oat into a class
-task bootOat {
-    inputs.file dex2oatFile
-    inputs.file configurations.allDexedJars
-    outputs.file bootArtFile
-    outputs.file bootOatFile
+task clean(type: Delete)
 
-    doLast {
-        project.exec {
-            workingDir = androidFSRoot
-            executable = relativize(androidFSRoot, dex2oatFile)
-            args "--android-root=${relativize(androidFSRoot, androidRootPath)}"
-            args '--runtime-arg', '-Xms64m'
-            args '--runtime-arg', '-Xmx64m'
-            args '--runtime-arg', '-XX:DisableHSpaceCompactForOOM'
-            args "--instruction-set=${instructionSet}"
-
-            configurations.allDexedJars.files.each { dexedJar ->
-                args "--dex-file=${relativize(androidFSRoot, dexedJar)}"
-            }
-            args "--base=$bootOatBase"
-            args "--image-classes=$platformRoot/frameworks/base/preloaded-classes"
-            args "--image=${relativize(androidFSRoot, bootArtFile)}"
-            args "--oat-file=${relativize(androidFSRoot, bootOatFile)}"
-        }
-    }
-}
-
-task clean(type: Delete) {
-    delete bootOat.outputs
-}
+apply from: file("$gradleRoot/bootOat.gradle")
